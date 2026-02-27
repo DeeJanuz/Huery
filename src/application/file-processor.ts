@@ -6,13 +6,14 @@
  * dependency extraction, and module-level pattern detection.
  */
 
+import { randomUUID } from 'node:crypto';
 import {
   createCodeUnit,
   createCodeUnitPattern,
   calculateComplexityScore,
   type CodeUnit,
 } from '@/domain/models/index.js';
-import type { DetectedPattern, FileDependencyInfo, CodeUnitDeclaration } from '@/extraction/types.js';
+import type { DetectedPattern, FileDependencyInfo, CodeUnitDeclaration, LanguageComplexityPatterns, PatternRuleSet } from '@/extraction/types.js';
 import type { LanguageExtractor } from '@/extraction/language-registry.js';
 import { calculateComplexity } from '@/extraction/complexity-calculator.js';
 import { detectPatterns } from '@/extraction/pattern-detector.js';
@@ -32,6 +33,57 @@ function extractBody(
   const start = Math.max(0, decl.lineStart - 1);
   const end = Math.min(lines.length, decl.lineEnd);
   return lines.slice(start, end).join('\n');
+}
+
+/**
+ * Build a CodeUnit from a declaration, generating the ID upfront so patterns
+ * reference the correct codeUnitId without needing double creation.
+ */
+function buildCodeUnit(
+  decl: CodeUnitDeclaration,
+  content: string,
+  lines: string[],
+  filePath: string,
+  extractor: LanguageExtractor,
+  complexityPatterns: LanguageComplexityPatterns,
+  patternRules: PatternRuleSet,
+): CodeUnit {
+  const id = randomUUID();
+  const body = extractBody(content, lines, decl);
+  const complexity = calculateComplexity(body, complexityPatterns, decl.signature);
+  const complexityScore = calculateComplexityScore(complexity);
+  const detectedPatterns = detectPatterns(body, patternRules, filePath);
+
+  const patterns = detectedPatterns.map(p =>
+    createCodeUnitPattern({
+      codeUnitId: id,
+      patternType: p.patternType,
+      patternValue: p.patternValue,
+      lineNumber: p.lineNumber,
+      columnAccess: p.columnAccess,
+    }),
+  );
+
+  const children = (decl.children ?? []).map(child =>
+    buildCodeUnit(child, content, lines, filePath, extractor, complexityPatterns, patternRules),
+  );
+
+  return createCodeUnit({
+    id,
+    filePath,
+    name: decl.name,
+    unitType: decl.unitType,
+    lineStart: decl.lineStart,
+    lineEnd: decl.lineEnd,
+    signature: decl.signature,
+    isAsync: decl.isAsync,
+    isExported: decl.isExported,
+    language: extractor.languageId,
+    complexity: complexity as unknown as Record<string, number>,
+    complexityScore,
+    patterns,
+    children,
+  });
 }
 
 export interface FileProcessingResult {
@@ -69,71 +121,13 @@ export function processFile(
   const patternRules = extractor.getPatternRules();
   const lines = content.split('\n');
 
-  // 2-4. For each declaration, calculate complexity, detect patterns, and create domain objects
+  // 2-4. For each declaration, build domain objects with correct IDs from the start
   const codeUnits: CodeUnit[] = [];
   const codeUnitLineRanges: Array<{ lineStart: number; lineEnd: number }> = [];
 
   for (const decl of declarations) {
-    const body = extractBody(content, lines, decl);
-    const complexity = calculateComplexity(body, complexityPatterns, decl.signature);
-    const complexityScore = calculateComplexityScore(complexity);
-    const detectedPatterns = detectPatterns(body, patternRules, filePath);
-
-    // Create a temporary ID for the code unit so patterns can reference it
-    const unit = createCodeUnit({
-      filePath,
-      name: decl.name,
-      unitType: decl.unitType,
-      lineStart: decl.lineStart,
-      lineEnd: decl.lineEnd,
-      signature: decl.signature,
-      isAsync: decl.isAsync,
-      isExported: decl.isExported,
-      language: extractor.languageId,
-      complexity: complexity as unknown as Record<string, number>,
-      complexityScore,
-      patterns: detectedPatterns.map(p =>
-        createCodeUnitPattern({
-          codeUnitId: 'pending', // Will be set after unit creation
-          patternType: p.patternType,
-          patternValue: p.patternValue,
-          lineNumber: p.lineNumber,
-          columnAccess: p.columnAccess,
-        }),
-      ),
-      children: processChildren(decl.children ?? [], content, lines, filePath, extractor, complexityPatterns, patternRules),
-    });
-
-    // Re-create patterns with the correct codeUnitId
-    const patternsWithId = detectedPatterns.map(p =>
-      createCodeUnitPattern({
-        codeUnitId: unit.id,
-        patternType: p.patternType,
-        patternValue: p.patternValue,
-        lineNumber: p.lineNumber,
-        columnAccess: p.columnAccess,
-      }),
-    );
-
-    // Create final unit with correct pattern IDs
-    const finalUnit = createCodeUnit({
-      id: unit.id,
-      filePath,
-      name: decl.name,
-      unitType: decl.unitType,
-      lineStart: decl.lineStart,
-      lineEnd: decl.lineEnd,
-      signature: decl.signature,
-      isAsync: decl.isAsync,
-      isExported: decl.isExported,
-      language: extractor.languageId,
-      complexity: complexity as unknown as Record<string, number>,
-      complexityScore,
-      patterns: patternsWithId,
-      children: unit.children,
-    });
-
-    codeUnits.push(finalUnit);
+    const unit = buildCodeUnit(decl, content, lines, filePath, extractor, complexityPatterns, patternRules);
+    codeUnits.push(unit);
     codeUnitLineRanges.push({ lineStart: decl.lineStart, lineEnd: decl.lineEnd });
   }
 
@@ -154,71 +148,4 @@ export function processFile(
     dependencies,
     moduleLevelPatterns,
   };
-}
-
-function processChildren(
-  children: CodeUnitDeclaration[],
-  content: string,
-  lines: string[],
-  filePath: string,
-  extractor: LanguageExtractor,
-  complexityPatterns: import('@/extraction/types.js').LanguageComplexityPatterns,
-  patternRules: import('@/extraction/types.js').PatternRuleSet,
-): CodeUnit[] {
-  return children.map(child => {
-    const body = extractBody(content, lines, child);
-    const complexity = calculateComplexity(body, complexityPatterns, child.signature);
-    const complexityScore = calculateComplexityScore(complexity);
-    const detectedPatterns = detectPatterns(body, patternRules, filePath);
-
-    const unit = createCodeUnit({
-      filePath,
-      name: child.name,
-      unitType: child.unitType,
-      lineStart: child.lineStart,
-      lineEnd: child.lineEnd,
-      signature: child.signature,
-      isAsync: child.isAsync,
-      isExported: child.isExported,
-      language: extractor.languageId,
-      complexity: complexity as unknown as Record<string, number>,
-      complexityScore,
-      patterns: detectedPatterns.map(p =>
-        createCodeUnitPattern({
-          codeUnitId: 'pending',
-          patternType: p.patternType,
-          patternValue: p.patternValue,
-          lineNumber: p.lineNumber,
-          columnAccess: p.columnAccess,
-        }),
-      ),
-    });
-
-    // Re-create with correct ID
-    const patternsWithId = detectedPatterns.map(p =>
-      createCodeUnitPattern({
-        codeUnitId: unit.id,
-        patternType: p.patternType,
-        patternValue: p.patternValue,
-        lineNumber: p.lineNumber,
-        columnAccess: p.columnAccess,
-      }),
-    );
-
-    return createCodeUnit({
-      id: unit.id,
-      filePath,
-      name: child.name,
-      unitType: child.unitType,
-      lineStart: child.lineStart,
-      lineEnd: child.lineEnd,
-      signature: child.signature,
-      isAsync: child.isAsync,
-      isExported: child.isExported,
-      language: extractor.languageId,
-      complexity: complexity as unknown as Record<string, number>,
-      complexityScore,
-      patterns: patternsWithId,
-    });
-  });
 }

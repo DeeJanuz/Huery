@@ -57,54 +57,16 @@ export class AnalysisOrchestrator {
     try {
       const allFiles = await this.listAllFiles(options.rootDir);
       const filterOpts = this.buildFilterOptions(options);
-
-      let filesProcessed = 0;
-      let codeUnitsExtracted = 0;
-      let patternsDetected = 0;
-      let dependenciesFound = 0;
-      let envVariablesFound = 0;
-
-      for (const filePath of allFiles) {
-        // Check for .env.example files
-        if (isEnvExampleFile(filePath)) {
-          const content = await this.deps.fileSystem.readFile(filePath);
-          const envVars = extractEnvVariables(content);
-          for (const envVar of envVars) {
-            this.deps.envVarRepo.save(createEnvVariable({
-              name: envVar.name,
-              description: envVar.description,
-              hasDefault: envVar.hasDefault,
-              lineNumber: envVar.lineNumber,
-            }));
-          }
-          envVariablesFound += envVars.length;
-          continue;
-        }
-
-        // Filter code files
-        if (!shouldProcessFile(filePath, this.deps.languageRegistry, filterOpts)) {
-          continue;
-        }
-
-        const result = await this.processOneFile(filePath);
-        filesProcessed++;
-        codeUnitsExtracted += result.codeUnitsCount;
-        patternsDetected += result.patternsCount;
-        dependenciesFound += result.dependenciesCount;
-      }
+      const counts = await this.processFiles(allFiles, {
+        filterOpts,
+        clearBeforeProcessing: false,
+      });
 
       const duration = Date.now() - startTime;
 
       return createAnalysisResult({
         success: true,
-        stats: createAnalysisStats({
-          filesProcessed,
-          codeUnitsExtracted,
-          patternsDetected,
-          dependenciesFound,
-          envVariablesFound,
-          duration,
-        }),
+        stats: createAnalysisStats({ ...counts, duration }),
       });
     } catch (error) {
       return createAnalysisResult({
@@ -126,58 +88,16 @@ export class AnalysisOrchestrator {
 
     try {
       const filterOpts = this.buildFilterOptions(options);
-
-      let filesProcessed = 0;
-      let codeUnitsExtracted = 0;
-      let patternsDetected = 0;
-      let dependenciesFound = 0;
-      let envVariablesFound = 0;
-
-      for (const filePath of changedFiles) {
-        // Handle .env.example files
-        if (isEnvExampleFile(filePath)) {
-          const content = await this.deps.fileSystem.readFile(filePath);
-          const envVars = extractEnvVariables(content);
-          this.deps.envVarRepo.clear();
-          for (const envVar of envVars) {
-            this.deps.envVarRepo.save(createEnvVariable({
-              name: envVar.name,
-              description: envVar.description,
-              hasDefault: envVar.hasDefault,
-              lineNumber: envVar.lineNumber,
-            }));
-          }
-          envVariablesFound += envVars.length;
-          continue;
-        }
-
-        if (!shouldProcessFile(filePath, this.deps.languageRegistry, filterOpts)) {
-          continue;
-        }
-
-        // Clear old data for this file
-        this.deps.codeUnitRepo.deleteByFilePath(filePath);
-        this.deps.dependencyRepo.deleteBySourceFile(filePath);
-
-        const result = await this.processOneFile(filePath);
-        filesProcessed++;
-        codeUnitsExtracted += result.codeUnitsCount;
-        patternsDetected += result.patternsCount;
-        dependenciesFound += result.dependenciesCount;
-      }
+      const counts = await this.processFiles(changedFiles, {
+        filterOpts,
+        clearBeforeProcessing: true,
+      });
 
       const duration = Date.now() - startTime;
 
       return createAnalysisResult({
         success: true,
-        stats: createAnalysisStats({
-          filesProcessed,
-          codeUnitsExtracted,
-          patternsDetected,
-          dependenciesFound,
-          envVariablesFound,
-          duration,
-        }),
+        stats: createAnalysisStats({ ...counts, duration }),
       });
     } catch (error) {
       return createAnalysisResult({
@@ -185,6 +105,75 @@ export class AnalysisOrchestrator {
         error: error instanceof Error ? error.message : String(error),
       });
     }
+  }
+
+  /**
+   * Shared file processing loop used by both analyze() and analyzeIncremental().
+   */
+  private async processFiles(
+    files: string[],
+    options: {
+      filterOpts: Partial<FileFilterOptions>;
+      clearBeforeProcessing: boolean;
+    },
+  ): Promise<{
+    filesProcessed: number;
+    codeUnitsExtracted: number;
+    patternsDetected: number;
+    dependenciesFound: number;
+    envVariablesFound: number;
+  }> {
+    let filesProcessed = 0;
+    let codeUnitsExtracted = 0;
+    let patternsDetected = 0;
+    let dependenciesFound = 0;
+    let envVariablesFound = 0;
+
+    for (const filePath of files) {
+      // Handle .env.example files
+      if (isEnvExampleFile(filePath)) {
+        const content = await this.deps.fileSystem.readFile(filePath);
+        const envVars = extractEnvVariables(content);
+        if (options.clearBeforeProcessing) {
+          this.deps.envVarRepo.clear();
+        }
+        for (const envVar of envVars) {
+          this.deps.envVarRepo.save(createEnvVariable({
+            name: envVar.name,
+            description: envVar.description,
+            hasDefault: envVar.hasDefault,
+            lineNumber: envVar.lineNumber,
+          }));
+        }
+        envVariablesFound += envVars.length;
+        continue;
+      }
+
+      // Filter code files
+      if (!shouldProcessFile(filePath, this.deps.languageRegistry, options.filterOpts)) {
+        continue;
+      }
+
+      // Clear old data for this file when doing incremental processing
+      if (options.clearBeforeProcessing) {
+        this.deps.codeUnitRepo.deleteByFilePath(filePath);
+        this.deps.dependencyRepo.deleteBySourceFile(filePath);
+      }
+
+      const result = await this.processOneFile(filePath);
+      filesProcessed++;
+      codeUnitsExtracted += result.codeUnitsCount;
+      patternsDetected += result.patternsCount;
+      dependenciesFound += result.dependenciesCount;
+    }
+
+    return {
+      filesProcessed,
+      codeUnitsExtracted,
+      patternsDetected,
+      dependenciesFound,
+      envVariablesFound,
+    };
   }
 
   private async processOneFile(filePath: string): Promise<{

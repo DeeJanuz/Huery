@@ -40,6 +40,7 @@ export class SqliteCodeUnitRepository implements ICodeUnitRepository {
   private readonly deleteByFilePathStmt: Database.Statement;
   private readonly clearUnitsStmt: Database.Statement;
   private readonly clearPatternsStmt: Database.Statement;
+  private readonly selectChildrenByParentId: Database.Statement;
 
   constructor(private readonly db: Database.Database) {
     this.insertUnit = db.prepare(`
@@ -64,10 +65,19 @@ export class SqliteCodeUnitRepository implements ICodeUnitRepository {
     this.selectPatternsByUnitId = db.prepare(
       'SELECT * FROM code_unit_patterns WHERE code_unit_id = ?',
     );
-    this.selectByFilePath = db.prepare('SELECT * FROM code_units WHERE file_path = ?');
-    this.selectByType = db.prepare('SELECT * FROM code_units WHERE unit_type = ?');
-    this.selectByLanguage = db.prepare('SELECT * FROM code_units WHERE language = ?');
-    this.selectAll = db.prepare('SELECT * FROM code_units');
+    this.selectChildrenByParentId = db.prepare(
+      'SELECT * FROM code_units WHERE parent_unit_id = ?',
+    );
+    this.selectByFilePath = db.prepare(
+      'SELECT * FROM code_units WHERE file_path = ? AND parent_unit_id IS NULL',
+    );
+    this.selectByType = db.prepare(
+      'SELECT * FROM code_units WHERE unit_type = ? AND parent_unit_id IS NULL',
+    );
+    this.selectByLanguage = db.prepare(
+      'SELECT * FROM code_units WHERE language = ? AND parent_unit_id IS NULL',
+    );
+    this.selectAll = db.prepare('SELECT * FROM code_units WHERE parent_unit_id IS NULL');
     this.deleteByFilePathStmt = db.prepare('DELETE FROM code_units WHERE file_path = ?');
     this.clearUnitsStmt = db.prepare('DELETE FROM code_units');
     this.clearPatternsStmt = db.prepare('DELETE FROM code_unit_patterns');
@@ -75,34 +85,7 @@ export class SqliteCodeUnitRepository implements ICodeUnitRepository {
 
   save(unit: CodeUnit): void {
     const saveTransaction = this.db.transaction(() => {
-      this.deletePatternsByUnitId.run(unit.id);
-
-      this.insertUnit.run({
-        id: unit.id,
-        file_path: unit.filePath,
-        name: unit.name,
-        unit_type: unit.unitType,
-        line_start: unit.lineStart,
-        line_end: unit.lineEnd,
-        parent_unit_id: unit.parentUnitId ?? null,
-        signature: unit.signature ?? null,
-        is_async: unit.isAsync ? 1 : 0,
-        is_exported: unit.isExported ? 1 : 0,
-        language: unit.language,
-        complexity: JSON.stringify(unit.complexity),
-        complexity_score: unit.complexityScore,
-      });
-
-      for (const pattern of unit.patterns) {
-        this.insertPattern.run({
-          id: pattern.id,
-          code_unit_id: pattern.codeUnitId,
-          pattern_type: pattern.patternType,
-          pattern_value: pattern.patternValue,
-          line_number: pattern.lineNumber ?? null,
-          column_access: pattern.columnAccess ? JSON.stringify(pattern.columnAccess) : null,
-        });
-      }
+      this.saveUnit(unit);
     });
 
     saveTransaction();
@@ -156,7 +139,45 @@ export class SqliteCodeUnitRepository implements ICodeUnitRepository {
     clearTransaction();
   }
 
-  private rowToCodeUnit(row: CodeUnitRow): CodeUnit {
+  private saveUnit(unit: CodeUnit): void {
+    this.deletePatternsByUnitId.run(unit.id);
+
+    this.insertUnit.run({
+      id: unit.id,
+      file_path: unit.filePath,
+      name: unit.name,
+      unit_type: unit.unitType,
+      line_start: unit.lineStart,
+      line_end: unit.lineEnd,
+      parent_unit_id: unit.parentUnitId ?? null,
+      signature: unit.signature ?? null,
+      is_async: unit.isAsync ? 1 : 0,
+      is_exported: unit.isExported ? 1 : 0,
+      language: unit.language,
+      complexity: JSON.stringify(unit.complexity),
+      complexity_score: unit.complexityScore,
+    });
+
+    for (const pattern of unit.patterns) {
+      this.insertPattern.run({
+        id: pattern.id,
+        code_unit_id: pattern.codeUnitId,
+        pattern_type: pattern.patternType,
+        pattern_value: pattern.patternValue,
+        line_number: pattern.lineNumber ?? null,
+        column_access: pattern.columnAccess ? JSON.stringify(pattern.columnAccess) : null,
+      });
+    }
+
+    for (const child of unit.children) {
+      this.saveUnit({
+        ...child,
+        parentUnitId: unit.id,
+      });
+    }
+  }
+
+  private rowToCodeUnit(row: CodeUnitRow, maxDepth = 3): CodeUnit {
     const patternRows = this.selectPatternsByUnitId.all(row.id) as PatternRow[];
     const patterns: CodeUnitPattern[] = patternRows.map((p) => ({
       id: p.id,
@@ -166,6 +187,13 @@ export class SqliteCodeUnitRepository implements ICodeUnitRepository {
       lineNumber: p.line_number ?? undefined,
       columnAccess: p.column_access ? JSON.parse(p.column_access) : undefined,
     }));
+
+    const children: CodeUnit[] =
+      maxDepth > 0
+        ? (this.selectChildrenByParentId.all(row.id) as CodeUnitRow[]).map((childRow) =>
+            this.rowToCodeUnit(childRow, maxDepth - 1),
+          )
+        : [];
 
     return {
       id: row.id,
@@ -182,7 +210,7 @@ export class SqliteCodeUnitRepository implements ICodeUnitRepository {
       complexity: JSON.parse(row.complexity) as Record<string, number>,
       complexityScore: row.complexity_score,
       patterns,
-      children: [],
+      children,
     };
   }
 }

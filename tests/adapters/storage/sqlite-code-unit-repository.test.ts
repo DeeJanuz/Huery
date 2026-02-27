@@ -163,4 +163,176 @@ describe('SqliteCodeUnitRepository', () => {
     expect(found!.complexity).toEqual({ cyclomatic: 5, cognitive: 3 });
     expect(found!.complexityScore).toBe(4.5);
   });
+
+  describe('children persistence', () => {
+    it('should save unit with children and retrieve them via findById', () => {
+      const child1 = makeCodeUnit({
+        id: 'child-1',
+        name: 'method1',
+        unitType: CodeUnitType.METHOD,
+        parentUnitId: 'parent-1',
+        lineStart: 3,
+        lineEnd: 5,
+      });
+      const child2 = makeCodeUnit({
+        id: 'child-2',
+        name: 'method2',
+        unitType: CodeUnitType.METHOD,
+        parentUnitId: 'parent-1',
+        lineStart: 7,
+        lineEnd: 9,
+      });
+      const parent = makeCodeUnit({
+        id: 'parent-1',
+        name: 'MyClass',
+        unitType: CodeUnitType.CLASS,
+        lineStart: 1,
+        lineEnd: 10,
+        children: [child1, child2],
+      });
+
+      repo.save(parent);
+
+      const found = repo.findById('parent-1');
+      expect(found).toBeDefined();
+      expect(found!.children).toHaveLength(2);
+      expect(found!.children[0].id).toBe('child-1');
+      expect(found!.children[0].name).toBe('method1');
+      expect(found!.children[0].parentUnitId).toBe('parent-1');
+      expect(found!.children[1].id).toBe('child-2');
+      expect(found!.children[1].name).toBe('method2');
+    });
+
+    it('should set parentUnitId on persisted children', () => {
+      const child = makeCodeUnit({
+        id: 'child-1',
+        name: 'method1',
+        unitType: CodeUnitType.METHOD,
+        parentUnitId: 'parent-1',
+        lineStart: 3,
+        lineEnd: 5,
+      });
+      const parent = makeCodeUnit({
+        id: 'parent-1',
+        name: 'MyClass',
+        unitType: CodeUnitType.CLASS,
+        lineStart: 1,
+        lineEnd: 10,
+        children: [child],
+      });
+
+      repo.save(parent);
+
+      // The child should be retrievable directly and have the correct parentUnitId
+      const foundChild = repo.findById('child-1');
+      expect(foundChild).toBeDefined();
+      expect(foundChild!.parentUnitId).toBe('parent-1');
+    });
+
+    it('should not duplicate children in findAll results', () => {
+      const child = makeCodeUnit({
+        id: 'child-1',
+        name: 'method1',
+        unitType: CodeUnitType.METHOD,
+        parentUnitId: 'parent-1',
+        lineStart: 3,
+        lineEnd: 5,
+      });
+      const parent = makeCodeUnit({
+        id: 'parent-1',
+        name: 'MyClass',
+        unitType: CodeUnitType.CLASS,
+        lineStart: 1,
+        lineEnd: 10,
+        children: [child],
+      });
+
+      repo.save(parent);
+
+      const all = repo.findAll();
+      // Only the parent should be at top level; child is nested inside
+      expect(all).toHaveLength(1);
+      expect(all[0].id).toBe('parent-1');
+      expect(all[0].children).toHaveLength(1);
+    });
+
+    it('should not duplicate children in findByFilePath results', () => {
+      const child = makeCodeUnit({
+        id: 'child-1',
+        name: 'method1',
+        unitType: CodeUnitType.METHOD,
+        parentUnitId: 'parent-1',
+        lineStart: 3,
+        lineEnd: 5,
+      });
+      const parent = makeCodeUnit({
+        id: 'parent-1',
+        name: 'MyClass',
+        unitType: CodeUnitType.CLASS,
+        lineStart: 1,
+        lineEnd: 10,
+        children: [child],
+      });
+
+      repo.save(parent);
+
+      const results = repo.findByFilePath('src/index.ts');
+      expect(results).toHaveLength(1);
+      expect(results[0].id).toBe('parent-1');
+      expect(results[0].children).toHaveLength(1);
+    });
+
+    it('should delete children when deleting by file path', () => {
+      const child = makeCodeUnit({
+        id: 'child-1',
+        name: 'method1',
+        unitType: CodeUnitType.METHOD,
+        parentUnitId: 'parent-1',
+        lineStart: 3,
+        lineEnd: 5,
+      });
+      const parent = makeCodeUnit({
+        id: 'parent-1',
+        name: 'MyClass',
+        unitType: CodeUnitType.CLASS,
+        lineStart: 1,
+        lineEnd: 10,
+        children: [child],
+      });
+
+      repo.save(parent);
+      repo.deleteByFilePath('src/index.ts');
+
+      expect(repo.findById('parent-1')).toBeUndefined();
+      expect(repo.findById('child-1')).toBeUndefined();
+    });
+
+    it('should handle saveBatch with children', () => {
+      const child = makeCodeUnit({
+        id: 'child-1',
+        name: 'method1',
+        unitType: CodeUnitType.METHOD,
+        parentUnitId: 'parent-1',
+        lineStart: 3,
+        lineEnd: 5,
+      });
+      const parent = makeCodeUnit({
+        id: 'parent-1',
+        name: 'MyClass',
+        unitType: CodeUnitType.CLASS,
+        lineStart: 1,
+        lineEnd: 10,
+        children: [child],
+      });
+      const standalone = makeCodeUnit({ id: 'standalone-1', name: 'helper' });
+
+      repo.saveBatch([parent, standalone]);
+
+      const all = repo.findAll();
+      expect(all).toHaveLength(2);
+
+      const foundParent = repo.findById('parent-1');
+      expect(foundParent!.children).toHaveLength(1);
+    });
+  });
 });
