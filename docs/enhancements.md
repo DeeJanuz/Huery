@@ -1,7 +1,7 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-02-28
-**Total Active Issues:** 1
+**Total Active Issues:** 2
 **Resolved This Month:** 4
 
 ---
@@ -20,6 +20,10 @@
 ---
 
 ## Resolved Issues
+
+#### [LOW-003] Duplicated Traversal Logic Between findBlockEnd and findBlockEndIndex
+- **Resolved:** 2026-02-28
+- **Resolution:** Extracted shared `findClosingBrace()` helper that returns both `charIndex` and `lineNumber`; `findBlockEnd` and `findBlockEndIndex` are now thin wrappers.
 
 #### [MED-001] AnalysisOrchestrator: Duplication Between analyze() and analyzeIncremental()
 - **Resolved:** 2026-02-27, commit 3153f0a
@@ -43,9 +47,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 1 |
+| Total Active | 2 |
 | Critical | 0 |
 | High | 0 |
 | Medium | 0 |
-| Low | 1 |
+| Low | 2 |
 | Resolved This Month | 4 |

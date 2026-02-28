@@ -28,14 +28,25 @@ export const JS_COMMENT_SYNTAX: CommentSyntax = {
 };
 
 /**
- * Find the end line of a brace-delimited code block starting at a given position
- * by tracking brace depth. Works for brace-based languages (JS, Go, Java, Rust, C#).
+ * Result of finding a closing brace, containing both the character index
+ * and line number of the match.
+ */
+interface BlockEndResult {
+  /** Character index of the closing brace, or -1 if not found */
+  readonly charIndex: number;
+  /** 1-indexed line number of the closing brace, or estimated line if not found */
+  readonly lineNumber: number;
+}
+
+/**
+ * Core traversal logic for finding the closing brace of a brace-delimited block.
+ * Tracks brace depth while skipping comments, string literals, and regex literals.
  *
  * @param content - Full file content
  * @param startIndex - Character index to start searching from (should be at or before the opening brace)
- * @returns The 1-indexed line number where the block ends
+ * @returns Both the character index and line number of the closing brace
  */
-export function findBlockEnd(content: string, startIndex: number): number {
+function findClosingBrace(content: string, startIndex: number): BlockEndResult {
   let depth = 0;
   let foundOpenBrace = false;
   let lineNumber = content.slice(0, startIndex).split('\n').length;
@@ -108,13 +119,30 @@ export function findBlockEnd(content: string, startIndex: number): number {
     } else if (char === '}') {
       depth--;
       if (foundOpenBrace && depth === 0) {
-        return lineNumber;
+        return { charIndex: i, lineNumber };
       }
     }
   }
 
-  // If we couldn't find the end, estimate based on content length
-  return lineNumber + 10;
+  // Not found
+  return { charIndex: -1, lineNumber };
+}
+
+/**
+ * Find the end line of a brace-delimited code block starting at a given position
+ * by tracking brace depth. Works for brace-based languages (JS, Go, Java, Rust, C#).
+ *
+ * @param content - Full file content
+ * @param startIndex - Character index to start searching from (should be at or before the opening brace)
+ * @returns The 1-indexed line number where the block ends
+ */
+export function findBlockEnd(content: string, startIndex: number): number {
+  const result = findClosingBrace(content, startIndex);
+  if (result.charIndex === -1) {
+    // If we couldn't find the end, estimate based on content length
+    return result.lineNumber + 10;
+  }
+  return result.lineNumber;
 }
 
 /**
@@ -126,76 +154,7 @@ export function findBlockEnd(content: string, startIndex: number): number {
  * @returns The character index of the closing brace, or -1 if not found
  */
 export function findBlockEndIndex(content: string, startIndex: number): number {
-  let depth = 0;
-  let foundOpenBrace = false;
-
-  for (let i = startIndex; i < content.length; i++) {
-    const char = content[i];
-
-    if (char === '\n') {
-      continue;
-    }
-
-    // Skip single-line comments
-    if (char === '/' && content[i + 1] === '/') {
-      const newlineIdx = content.indexOf('\n', i);
-      if (newlineIdx === -1) break;
-      i = newlineIdx - 1; // will be incremented by for loop
-      continue;
-    }
-
-    // Skip multi-line comments
-    if (char === '/' && content[i + 1] === '*') {
-      const endIdx = content.indexOf('*/', i + 2);
-      if (endIdx === -1) break;
-      i = endIdx + 1; // skip past */
-      continue;
-    }
-
-    // Skip string literals (single-quoted, double-quoted, template literals)
-    if (char === "'" || char === '"' || char === '`') {
-      const quote = char;
-      i++;
-      while (i < content.length) {
-        if (content[i] === '\\') {
-          i++; // skip escaped character
-        } else if (content[i] === quote) {
-          break;
-        }
-        i++;
-      }
-      continue;
-    }
-
-    // Skip regex literals
-    if (char === '/' && isRegexStart(content, i)) {
-      i++;
-      while (i < content.length) {
-        if (content[i] === '\\') {
-          i++; // skip escaped character
-        } else if (content[i] === '/') {
-          break;
-        } else if (content[i] === '\n') {
-          // Regex can't span lines; this isn't a regex
-          break;
-        }
-        i++;
-      }
-      continue;
-    }
-
-    if (char === '{') {
-      depth++;
-      foundOpenBrace = true;
-    } else if (char === '}') {
-      depth--;
-      if (foundOpenBrace && depth === 0) {
-        return i;
-      }
-    }
-  }
-
-  return -1;
+  return findClosingBrace(content, startIndex).charIndex;
 }
 
 /**
