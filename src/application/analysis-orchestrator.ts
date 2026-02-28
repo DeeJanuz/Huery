@@ -12,7 +12,7 @@
  * Simplified from Ludflow's distributed orchestrator for local-first use.
  */
 
-import { isAbsolute, join } from 'node:path';
+import { basename, isAbsolute, join } from 'node:path';
 import {
   createAnalysisResult,
   createAnalysisStats,
@@ -66,6 +66,7 @@ export class AnalysisOrchestrator {
     const startTime = Date.now();
 
     try {
+      this.clearAllData();
       const allFiles = await this.listAllFiles(options.rootDir);
       const filterOpts = this.buildFilterOptions(options);
       const counts = await this.processFiles(allFiles, {
@@ -183,14 +184,13 @@ export class AnalysisOrchestrator {
       const isCodeFile = shouldProcessFile(filePath, this.deps.languageRegistry, options.filterOpts);
 
       if (!isCodeFile) {
-        // Non-code files may still contain schema definitions (e.g. .prisma files)
-        // Read their content for schema model extraction
-        if (this.hasDeepAnalysisDeps()) {
+        // Only .prisma files need reading for schema model extraction
+        if (this.hasDeepAnalysisDeps() && filePath.endsWith('.prisma')) {
           try {
             const content = await this.deps.fileSystem.readFile(absolutePath);
             allFileContents.set(filePath, content);
           } catch {
-            // Ignore read errors for non-code files — schema extraction is best-effort
+            // Ignore read errors — schema extraction is best-effort
           }
         }
         continue;
@@ -243,6 +243,21 @@ export class AnalysisOrchestrator {
       envVariablesFound,
       filesWithErrors,
     };
+  }
+
+  /**
+   * Clear all repository data before a full analysis run.
+   */
+  private clearAllData(): void {
+    this.deps.codeUnitRepo.clear();
+    this.deps.dependencyRepo.clear();
+    this.deps.envVarRepo.clear();
+    if (this.hasDeepAnalysisDeps()) {
+      this.deps.functionCallRepo!.clear();
+      this.deps.typeFieldRepo!.clear();
+      this.deps.eventFlowRepo!.clear();
+      this.deps.schemaModelRepo!.clear();
+    }
   }
 
   /**
@@ -334,17 +349,21 @@ export class AnalysisOrchestrator {
    * Recursively list all files under the given directory.
    */
   private async listAllFiles(dir: string): Promise<string[]> {
+    const skipDirs = new Set(this.deps.languageRegistry.getAllSkipDirectories());
     const allFiles: string[] = [];
-    await this.walkDirectory(dir, allFiles);
+    await this.walkDirectory(dir, allFiles, skipDirs);
     return allFiles;
   }
 
-  private async walkDirectory(dir: string, accumulator: string[]): Promise<void> {
+  private async walkDirectory(dir: string, accumulator: string[], skipDirs: Set<string>): Promise<void> {
     const entries = await this.deps.fileSystem.listFiles(dir);
     for (const entry of entries) {
       const isDir = await this.deps.fileSystem.isDirectory(entry);
       if (isDir) {
-        await this.walkDirectory(entry, accumulator);
+        const dirName = basename(entry);
+        if (skipDirs.has(dirName)) continue;
+        if (dirName.startsWith('.') && dirName !== '.github') continue;
+        await this.walkDirectory(entry, accumulator, skipDirs);
       } else {
         accumulator.push(entry);
       }

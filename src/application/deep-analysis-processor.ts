@@ -188,6 +188,8 @@ function processUnit(
 
       const flows = extractEventFlows(body);
       for (const flow of flows) {
+        // Skip flows without a named event (e.g. RxJS .subscribe(), Redux .dispatch())
+        if (!flow.eventName) continue;
         eventFlows.push(createEventFlow({
           codeUnitId: unit.id,
           eventName: flow.eventName,
