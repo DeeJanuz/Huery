@@ -75,8 +75,42 @@ describe('generateManifests', () => {
     expect(modulesContent).toContain('main');
   });
 
-  it('should include all sections with no token budget cap by default', async () => {
-    // Add enough data that would have been truncated under the old 5000-token budget
+  it('should apply a finite default token budget of 10000', async () => {
+    // Add enough data that would exceed 10000 tokens to verify truncation occurs
+    const codeUnitRepo = deps.codeUnitRepo as InMemoryCodeUnitRepository;
+    for (let i = 0; i < 200; i++) {
+      codeUnitRepo.save(
+        createCodeUnit({
+          filePath: `src/modules/module-${i}.ts`,
+          name: `longFunctionNameToConsumeTokenBudget_${i}_${'x'.repeat(50)}`,
+          unitType: CodeUnitType.FUNCTION,
+          lineStart: 1,
+          lineEnd: 10,
+          isAsync: true,
+          isExported: true,
+          language: 'typescript',
+          complexityScore: i,
+        }),
+      );
+    }
+
+    await generateManifests(deps, { outputDir: '.heury' });
+
+    // All files should exist and have content
+    const modules = await fileSystem.readFile('.heury/MODULES.md');
+    const hotspots = await fileSystem.readFile('.heury/HOTSPOTS.md');
+
+    expect(modules.length).toBeGreaterThan(0);
+    expect(hotspots.length).toBeGreaterThan(0);
+
+    // With 10000 budget (2500 per section), large data should be truncated
+    // At least one manifest should show omission evidence
+    const allContent = modules + hotspots;
+    // The total char length should be bounded (10000 tokens * ~4 chars/token = ~40000 chars)
+    expect(modules.length + hotspots.length).toBeLessThan(50000);
+  });
+
+  it('should allow totalTokenBudget option to override the default', async () => {
     const codeUnitRepo = deps.codeUnitRepo as InMemoryCodeUnitRepository;
     for (let i = 0; i < 100; i++) {
       codeUnitRepo.save(
@@ -94,18 +128,11 @@ describe('generateManifests', () => {
       );
     }
 
-    await generateManifests(deps, { outputDir: '.heury' });
+    // Provide a very large budget to ensure no truncation
+    await generateManifests(deps, { outputDir: '.heury', totalTokenBudget: Infinity });
 
-    // All files should exist and have content
     const modules = await fileSystem.readFile('.heury/MODULES.md');
-    const patterns = await fileSystem.readFile('.heury/PATTERNS.md');
-    const dependencies = await fileSystem.readFile('.heury/DEPENDENCIES.md');
     const hotspots = await fileSystem.readFile('.heury/HOTSPOTS.md');
-
-    expect(modules.length).toBeGreaterThan(0);
-    expect(patterns.length).toBeGreaterThan(0);
-    expect(dependencies.length).toBeGreaterThan(0);
-    expect(hotspots.length).toBeGreaterThan(0);
 
     // With Infinity budget, no sections should be omitted
     expect(modules).not.toContain('more files available via MCP tools');

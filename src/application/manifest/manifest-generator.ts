@@ -15,7 +15,7 @@ import { generateDependenciesManifest } from './dependencies-generator.js';
 import { generateHotspotsManifest } from './hotspots-generator.js';
 import { generateSchemaManifest } from './schema-generator.js';
 
-const DEFAULT_TOKEN_BUDGET = Infinity;
+const DEFAULT_TOKEN_BUDGET = 10000;
 
 export interface ManifestDependencies {
   readonly codeUnitRepo: ICodeUnitRepository;

@@ -28,6 +28,7 @@ import { createGetCodeUnitsTool } from './tools/get-code-units.js';
 import { createGetDependenciesTool } from './tools/get-dependencies.js';
 import { createGetApiEndpointsTool } from './tools/get-api-endpoints.js';
 import { createGetFileContentTool } from './tools/get-file-content.js';
+import { createGetEnvVariablesTool } from './tools/get-env-variables.js';
 import { createVectorSearchTool } from './tools/vector-search.js';
 import { createTraceCallChainTool } from './tools/trace-call-chain.js';
 import { createGetEventFlowTool } from './tools/get-event-flow.js';
@@ -56,7 +57,7 @@ export function createMcpServer(deps: McpServerDependencies): Server {
       instructions: `Heury: local codebase analysis for LLM discovery.
 
 Optimized hybrid workflow:
-1. ORIENT: Read .heury/MODULES.md, PATTERNS.md, DEPENDENCIES.md, HOTSPOTS.md (~5K tokens total) for instant codebase understanding. Manifests are relevance-ranked — most important files and sections appear first. Omitted items are available via MCP tools.
+1. ORIENT: Read .heury/MODULES.md, PATTERNS.md, DEPENDENCIES.md, HOTSPOTS.md (~10K tokens total) for instant codebase understanding. Manifests are relevance-ranked — most important files and sections appear first. Omitted items are available via MCP tools.
 2. TARGET: Use get_code_units (is_exported: true) or search_codebase to find specific functions/classes. Compact format includes signatures — often enough to understand contracts without reading source.
 3. READ: Use get_file_content only when you need implementation details beyond the signature
 4. VERIFY: Use get_dependencies to understand import relationships
@@ -68,6 +69,7 @@ Quick reference:
 - get_code_units: Filter by file, type, language, complexity, export status. Use is_exported: true for public API discovery.
 - get_dependencies: Import graph filtered by source or target file
 - get_api_endpoints: API routes with HTTP methods and handler locations
+- get_env_variables: List environment variables from .env.example files
 - get_file_content: Read source files with optional line ranges
 - vector_search: Semantic similarity search across code units
 - trace_call_chain: Trace function call chains forward (callees) or backward (callers) with configurable depth
@@ -94,6 +96,7 @@ Token tips: Start with manifests (free orientation, relevance-ranked). Use get_c
     createGetDependenciesTool({ dependencyRepo: deps.dependencyRepo }),
     createGetApiEndpointsTool({ codeUnitRepo: deps.codeUnitRepo }),
     createGetFileContentTool({ fileSystem: deps.fileSystem }),
+    createGetEnvVariablesTool({ envVarRepo: deps.envVarRepo }),
     createVectorSearchTool({ vectorSearch: deps.vectorSearch }),
   ];
 

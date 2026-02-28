@@ -77,6 +77,40 @@ describe('analyzeCommand', () => {
     );
   });
 
+  it('should pass manifestTokenBudget from config to manifest generation', async () => {
+    await fs.writeFile(
+      `/project/${CONFIG_FILENAME}`,
+      JSON.stringify({
+        rootDir: '/project',
+        outputDir: '.heury',
+        include: ['**/*'],
+        exclude: [],
+        embedding: { provider: 'local' },
+        manifestTokenBudget: 500,
+      }),
+    );
+    // Create many files to produce enough data that a 500-token budget would truncate
+    for (let i = 0; i < 50; i++) {
+      await fs.writeFile(
+        `/project/module-${i}.ts`,
+        `export function longFunctionName_${i}_${'x'.repeat(80)}() { return ${i}; }`,
+      );
+    }
+
+    await analyzeCommand({ dir: '/project', full: false }, fs);
+
+    // Manifests should be generated (analysis succeeds)
+    expect(await fs.exists('/project/.heury/MODULES.md')).toBe(true);
+
+    // With a tiny 500-token budget, the total manifest size should be small
+    const modules = await fs.readFile('/project/.heury/MODULES.md');
+    const hotspots = await fs.readFile('/project/.heury/HOTSPOTS.md');
+    // 500 tokens * 4 chars/token = 2000 chars total across all manifests
+    // Each section gets ~25% = 125 tokens = 500 chars
+    expect(modules.length).toBeLessThan(1000);
+    expect(hotspots.length).toBeLessThan(1000);
+  });
+
   it('should report errors on failure', async () => {
     // Create a filesystem that throws on readFile (simulating corrupt config)
     const brokenFs = new InMemoryFileSystem();

@@ -57,6 +57,13 @@ export function validateConfig(config: unknown): config is HeuryConfig {
     );
   }
 
+  // Validate optional manifestTokenBudget
+  if (obj.manifestTokenBudget !== undefined) {
+    if (typeof obj.manifestTokenBudget !== 'number' || obj.manifestTokenBudget <= 0) {
+      throw new Error('Config manifestTokenBudget must be a positive number');
+    }
+  }
+
   // Validate optional enrichment block
   if (obj.enrichment !== undefined) {
     if (typeof obj.enrichment !== 'object' || obj.enrichment === null) {
@@ -91,6 +98,10 @@ export function mergeWithDefaults(partial: Partial<HeuryConfig>): HeuryConfig {
 
   if (partial.enrichment) {
     config.enrichment = { ...partial.enrichment };
+  }
+
+  if (partial.manifestTokenBudget !== undefined) {
+    config.manifestTokenBudget = partial.manifestTokenBudget;
   }
 
   return config;

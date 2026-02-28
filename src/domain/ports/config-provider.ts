@@ -14,6 +14,7 @@ export interface HeuryConfig {
     model?: string;
     baseUrl?: string;
   };
+  manifestTokenBudget?: number;
 }
 
 export interface IConfigProvider {

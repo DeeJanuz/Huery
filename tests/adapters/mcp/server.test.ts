@@ -103,4 +103,19 @@ describe('createMcpServer', () => {
     expect(server).toBeDefined();
     // Server should work fine without optional deps
   });
+
+  it('should include get_env_variables in instructions', () => {
+    const server = createMcpServer(mockDeps);
+    const instructions = (server as any)._instructions as string;
+
+    expect(instructions).toContain('get_env_variables');
+    expect(instructions).toContain('.env.example');
+  });
+
+  it('should reference ~10K tokens in ORIENT step', () => {
+    const server = createMcpServer(mockDeps);
+    const instructions = (server as any)._instructions as string;
+
+    expect(instructions).toContain('~10K tokens total');
+  });
 });

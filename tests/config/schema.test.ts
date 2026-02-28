@@ -75,6 +75,65 @@ describe('Config Schema', () => {
       expect(() => validateConfig(null)).toThrow();
       expect(() => validateConfig('string')).toThrow();
     });
+
+    it('should accept config with valid manifestTokenBudget', () => {
+      const config: HeuryConfig = {
+        rootDir: '/project',
+        outputDir: '.heury',
+        include: ['**/*.ts'],
+        exclude: ['node_modules/**'],
+        embedding: { provider: 'local' },
+        manifestTokenBudget: 5000,
+      };
+      expect(validateConfig(config)).toBe(true);
+    });
+
+    it('should accept config without manifestTokenBudget', () => {
+      const config: HeuryConfig = {
+        rootDir: '/project',
+        outputDir: '.heury',
+        include: ['**/*.ts'],
+        exclude: ['node_modules/**'],
+        embedding: { provider: 'local' },
+      };
+      expect(validateConfig(config)).toBe(true);
+    });
+
+    it('should reject config with zero manifestTokenBudget', () => {
+      const config = {
+        rootDir: '/project',
+        outputDir: '.heury',
+        include: ['**/*.ts'],
+        exclude: ['node_modules/**'],
+        embedding: { provider: 'local' },
+        manifestTokenBudget: 0,
+      };
+      expect(() => validateConfig(config)).toThrow('manifestTokenBudget');
+    });
+
+    it('should reject config with negative manifestTokenBudget', () => {
+      const config = {
+        rootDir: '/project',
+        outputDir: '.heury',
+        include: ['**/*.ts'],
+        exclude: ['node_modules/**'],
+        embedding: { provider: 'local' },
+        manifestTokenBudget: -100,
+      };
+      expect(() => validateConfig(config)).toThrow('manifestTokenBudget');
+    });
+
+    it('should reject config with non-number manifestTokenBudget', () => {
+      const config = {
+        rootDir: '/project',
+        outputDir: '.heury',
+        include: ['**/*.ts'],
+        exclude: ['node_modules/**'],
+        embedding: { provider: 'local' },
+        manifestTokenBudget: 'large',
+      };
+      expect(() => validateConfig(config)).toThrow('manifestTokenBudget');
+    });
   });
 
   describe('mergeWithDefaults', () => {
@@ -110,6 +169,18 @@ describe('Config Schema', () => {
       expect(result.embedding.provider).toBe('openai');
       // Other embedding defaults preserved
       expect(result.rootDir).toBe(DEFAULT_CONFIG.rootDir);
+    });
+
+    it('should pass through manifestTokenBudget when provided', () => {
+      const result = mergeWithDefaults({
+        manifestTokenBudget: 8000,
+      });
+      expect(result.manifestTokenBudget).toBe(8000);
+    });
+
+    it('should not include manifestTokenBudget when not provided', () => {
+      const result = mergeWithDefaults({});
+      expect(result.manifestTokenBudget).toBeUndefined();
     });
   });
 });

@@ -63,7 +63,10 @@ export async function analyzeCommand(
           schemaModelRepo: dependencies.schemaModelRepo,
           functionCallRepo: dependencies.functionCallRepo,
         },
-        { outputDir: `${options.dir}/${config.outputDir}` },
+        {
+          outputDir: `${options.dir}/${config.outputDir}`,
+          totalTokenBudget: config.manifestTokenBudget,
+        },
       );
 
       const manifestList = dependencies.schemaModelRepo
