@@ -417,6 +417,39 @@ OPTIONS
 
 ---
 
+### RepositoryFileCluster
+**Purpose:** Represents a cluster of files that form a cohesive feature area, computed by connected-component analysis on the import graph.
+
+**Properties:**
+- id: string - Primary key
+- name: string - Auto-computed name from common directory prefix (strips infrastructure segments like src/lib/app)
+- cohesion: number - Ratio of internal edges to total edges (0..1); higher means more self-contained
+- internalEdges: number - Count of import edges between files within the cluster
+- externalEdges: number - Count of import edges crossing the cluster boundary
+
+**Validation:**
+- name must not be empty
+- cohesion must be between 0 and 1
+- internalEdges must be >= 0
+- externalEdges must be >= 0
+
+---
+
+### RepositoryFileClusterMember
+**Purpose:** Records membership of a file in a cluster, including whether it is an entry point (imported from outside the cluster).
+
+**Properties:**
+- clusterId: string - Foreign key to RepositoryFileCluster
+- filePath: string - Path of the file within the cluster
+- isEntryPoint: boolean - Whether this file is imported by files outside the cluster (top 3 by external import count)
+
+**Unique Constraint:** (clusterId, filePath)
+
+**Indexes:**
+- file_path (for "which cluster contains this file?")
+
+---
+
 ## Deep Structural Ports (Repository Interfaces)
 
 ### IFunctionCallRepository
@@ -480,6 +513,16 @@ OPTIONS
 - deleteByCodeUnitId(codeUnitId: string): void
 - clear(): void
 
+### IFileClusterRepository
+**Methods:**
+- save(cluster: RepositoryFileCluster, members: RepositoryFileClusterMember[]): void
+- saveBatch(clusters: Array<{ cluster: RepositoryFileCluster; members: RepositoryFileClusterMember[] }>): void
+- findById(id: string): { cluster: RepositoryFileCluster; members: RepositoryFileClusterMember[] } | undefined
+- findByFilePath(filePath: string): { cluster: RepositoryFileCluster; members: RepositoryFileClusterMember[] } | undefined
+- findByName(name: string): { cluster: RepositoryFileCluster; members: RepositoryFileClusterMember[] }[]
+- findAll(): { cluster: RepositoryFileCluster; members: RepositoryFileClusterMember[] }[]
+- clear(): void
+
 ### ILlmProvider
 **Purpose:** Port for BYOK LLM providers used by the enrichment pipeline to generate code unit summaries.
 
@@ -515,4 +558,8 @@ CodeUnit (1) ----< (many) EventFlow (via codeUnitId)
 CodeUnit (1) ---- (0..1) UnitSummary (via codeUnitId, unique)
 CodeUnit (1) ----< (many) RepositoryGuardClause (via codeUnitId)
 SchemaModel (1) ----< (many) SchemaModelField (via modelId)
+
+File Clustering:
+RepositoryFileCluster (1) ----< (many) RepositoryFileClusterMember (via clusterId)
+FileDependency graph --> computeFileClusters() --> RepositoryFileCluster + members
 ```

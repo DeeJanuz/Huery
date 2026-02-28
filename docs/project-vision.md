@@ -83,7 +83,7 @@ All output lives in `.heury/` at the project root. This directory is **gitignore
 
 | File | Purpose | Content |
 |------|---------|---------|
-| `MODULES.md` | Module/directory overview | High-level descriptions of what each module does, with type fields for interfaces/classes |
+| `MODULES.md` | Module/directory overview | High-level descriptions of what each module does, with type fields for interfaces/classes and feature area clustering |
 | `PATTERNS.md` | Detected patterns | API endpoints, DB operations, external services, event flows |
 | `DEPENDENCIES.md` | Import/export dependency graph | How modules relate to each other |
 | `HOTSPOTS.md` | Complexity hotspots | Areas of high complexity with fan-out analysis from call graph data |
@@ -121,6 +121,7 @@ Ported from Ludflow's proven analysis capabilities. Heuristic regex-based extrac
 | **Event Flow Detection** | Event emit/subscribe patterns across frameworks (Node events, Socket.io, etc.) |
 | **Schema Model Extraction** | ORM/schema model extraction (Prisma, TypeORM, Mongoose, Drizzle) with fields and relations |
 | **Guard Condition Detection** | Early-return guards, auth checks, permission checks extracted from function bodies |
+| **Import Graph Clustering** | Connected-component clustering on the import graph with directory-boundary splitting for large components; identifies feature areas |
 | **LLM Enrichment (BYOK)** | Optional AI-generated function summaries via Anthropic, OpenAI, or Gemini APIs |
 
 ### Language Support
@@ -180,6 +181,7 @@ Simplified from Ludflow's 18 tools to a focused set for local codebase analysis:
 | `get-function-context` | Complete aggregated context for a function: signature, calls, callers, events, types, summary |
 | `get-unit-summaries` | LLM-generated summaries for code units with key behaviors and side effects |
 | `get-function-guards` | Query guard clauses in functions by unit ID, file path, or guard type |
+| `get-feature-area` | Rich context about a feature area (file cluster): metadata, code units, internal/external dependencies, patterns, entry points, and summary |
 
 ### Semantic Search Tools
 

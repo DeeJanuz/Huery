@@ -1,7 +1,7 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-02-28
-**Total Active Issues:** 7
+**Total Active Issues:** 8
 **Resolved This Month:** 4
 
 ---
@@ -25,6 +25,13 @@
 - **Detected:** 2026-02-28, commit f749d47
 
 ### Low Severity
+
+#### [LOW-008] generateModulesManifest Growing Parameter List (5 Positional Params)
+- **File:** `src/application/manifest/modules-generator.ts`
+- **Principle:** SRP (secondary: readability)
+- **Description:** `generateModulesManifest` now accepts 5 positional parameters (`codeUnitRepo`, `dependencyRepo`, `maxTokens`, `typeFieldRepo?`, `fileClusterRepo?`), two of which are optional trailing params. This is not severe but is on the boundary of parameter-object refactoring territory. Adding another optional repo will make call sites difficult to read and the signature fragile (optional positional params must maintain order).
+- **Suggested Fix:** Bundle the repository dependencies into a single `ModulesGeneratorDeps` interface object, keeping `maxTokens` as a separate parameter or part of an options object. This matches the pattern already used by `DeepAnalysisDependencies` and `AnalysisDependencies` in the same codebase. Low urgency since only 5 params currently.
+- **Detected:** 2026-02-28, commit a1b78ca
 
 #### [LOW-007] LLM Provider Factory Uses Switch on Provider Type
 - **File:** `src/adapters/llm/llm-provider-factory.ts`
@@ -91,9 +98,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 7 |
+| Total Active | 8 |
 | Critical | 0 |
 | High | 0 |
 | Medium | 2 |
-| Low | 5 |
+| Low | 6 |
 | Resolved This Month | 4 |
