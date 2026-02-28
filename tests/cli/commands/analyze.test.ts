@@ -45,6 +45,38 @@ describe('analyzeCommand', () => {
     expect(consoleSpy).toHaveBeenCalled();
   });
 
+  it('should generate manifest files after successful analysis', async () => {
+    await fs.writeFile(
+      `/project/${CONFIG_FILENAME}`,
+      JSON.stringify({
+        rootDir: '/project',
+        outputDir: '.heury',
+        include: ['**/*'],
+        exclude: [],
+        embedding: { provider: 'local' },
+      }),
+    );
+    await fs.writeFile('/project/index.ts', 'export function hello() { return "hi"; }');
+
+    await analyzeCommand({ dir: '/project', full: false }, fs);
+
+    // Verify manifest files were created
+    const modulesExists = await fs.exists('/project/.heury/MODULES.md');
+    const patternsExists = await fs.exists('/project/.heury/PATTERNS.md');
+    const dependenciesExists = await fs.exists('/project/.heury/DEPENDENCIES.md');
+    const hotspotsExists = await fs.exists('/project/.heury/HOTSPOTS.md');
+
+    expect(modulesExists).toBe(true);
+    expect(patternsExists).toBe(true);
+    expect(dependenciesExists).toBe(true);
+    expect(hotspotsExists).toBe(true);
+
+    // Verify the manifest log line was printed
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Manifests:'),
+    );
+  });
+
   it('should report errors on failure', async () => {
     // Create a filesystem that throws on readFile (simulating corrupt config)
     const brokenFs = new InMemoryFileSystem();

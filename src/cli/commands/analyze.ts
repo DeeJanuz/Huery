@@ -3,7 +3,7 @@
  */
 
 import type { IFileSystem } from '@/domain/ports/index.js';
-import { AnalysisOrchestrator } from '@/application/index.js';
+import { AnalysisOrchestrator, generateManifests } from '@/application/index.js';
 import { loadConfig } from '@/config/loader.js';
 import { createCompositionRoot } from '@/composition-root.js';
 import { NodeFileSystem } from '@/adapters/filesystem/node-filesystem.js';
@@ -36,6 +36,19 @@ export async function analyzeCommand(
       console.log(`  Dependencies: ${result.stats.dependenciesFound}`);
       console.log(`  Env variables: ${result.stats.envVariablesFound}`);
       console.log(`  Duration: ${result.stats.duration}ms`);
+
+      await generateManifests(
+        {
+          codeUnitRepo: dependencies.codeUnitRepo,
+          dependencyRepo: dependencies.dependencyRepo,
+          envVarRepo: dependencies.envVarRepo,
+          fileSystem: fs,
+        },
+        { outputDir: `${options.dir}/${config.outputDir}` },
+      );
+      console.log(
+        '  Manifests: MODULES.md, PATTERNS.md, DEPENDENCIES.md, HOTSPOTS.md',
+      );
     } else if (!result.success) {
       console.error(`Analysis failed: ${result.error ?? 'Unknown error'}`);
     }
