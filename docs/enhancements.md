@@ -10,6 +10,13 @@
 
 ### Low Severity
 
+#### [LOW-004] analyzeCommand Accumulating Post-Analysis Responsibilities
+- **File:** `src/cli/commands/analyze.ts`
+- **Principle:** SRP
+- **Description:** The `analyzeCommand` function now handles config loading, analysis orchestration, console reporting, AND manifest generation. Each new post-analysis step (e.g., embedding generation, MCP server start) will further bloat this function. Currently manageable but establishes a pattern toward a procedural script.
+- **Suggested Fix:** Extract a post-analysis pipeline (e.g., `PostAnalysisPipeline` or extend the orchestrator) so that `analyzeCommand` delegates to a composed sequence rather than accumulating inline steps. Monitor for now; refactor if a third post-analysis step is added.
+- **Detected:** 2026-02-28, commit d0f6552
+
 #### [LOW-002] LanguageExtractor Interface Could Be Segregated
 - **File:** `src/extraction/language-registry.ts`
 - **Principle:** ISP

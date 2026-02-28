@@ -45,7 +45,7 @@ This three-tier flow is the heart of heury's value:
 
 ### Tier 1 - Quick Discovery (Manifest Files)
 
-The LLM reads `.heury/modules.md`, `patterns.md`, `dependencies.md`, and `hotspots.md` in one shot (~5K tokens total). It gets instant understanding of what the codebase does, its key patterns, and areas of complexity.
+The LLM reads `.heury/MODULES.md`, `PATTERNS.md`, `DEPENDENCIES.md`, and `HOTSPOTS.md` in one shot (~5K tokens total). It gets instant understanding of what the codebase does, its key patterns, and areas of complexity.
 
 ### Tier 2 - Targeted Reading (Informed by Discovery)
 
@@ -83,10 +83,10 @@ All output lives in `.heury/` at the project root. This directory is **gitignore
 
 | File | Purpose | Content |
 |------|---------|---------|
-| `modules.md` | Module/directory overview | High-level descriptions of what each module does |
-| `patterns.md` | Detected patterns | API endpoints, DB operations, external services |
-| `dependencies.md` | Import/export dependency graph | How modules relate to each other |
-| `hotspots.md` | Complexity hotspots | Areas of high complexity needing attention |
+| `MODULES.md` | Module/directory overview | High-level descriptions of what each module does |
+| `PATTERNS.md` | Detected patterns | API endpoints, DB operations, external services |
+| `DEPENDENCIES.md` | Import/export dependency graph | How modules relate to each other |
+| `HOTSPOTS.md` | Complexity hotspots | Areas of high complexity needing attention |
 | `analysis.db` | Full SQLite database | All analysis data, vectors, relationships |
 
 **Token budget target**: ~5K tokens combined for the four markdown files. Enough detail for orientation, concise enough for a single context read.
@@ -97,6 +97,8 @@ Both transports supported:
 
 - **stdio (default)**: Zero configuration. Works with any MCP client that supports stdio.
 - **HTTP (optional)**: For clients or workflows that need HTTP transport. Configurable port.
+
+The server includes built-in `instructions` that guide LLM clients through the hybrid discovery workflow (ORIENT with manifests, TARGET with search tools, READ source files, VERIFY dependencies). MCP clients that support server instructions will receive this guidance automatically.
 
 ---
 
@@ -239,7 +241,7 @@ npx heury init
 | Command | Purpose |
 |---------|---------|
 | `npx heury init` | Initialize heury in a project. Creates config, sets up git hooks, creates `.heury/` directory. |
-| `npx heury analyze` | Run full codebase analysis |
+| `npx heury analyze` | Run full codebase analysis and generate manifest files |
 | `npx heury serve` | Start MCP server in HTTP mode |
 | `npx heury watch` | Watch mode for continuous analysis (future) |
 
