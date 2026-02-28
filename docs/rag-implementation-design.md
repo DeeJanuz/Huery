@@ -59,29 +59,30 @@ The initial implementation uses **InMemoryVectorSearch**, a pure-JavaScript cosi
 
 ### 2.1 What Gets Embedded
 
-Each code unit generates an embedding from a structured text representation:
+Each code unit generates an embedding from a structured text representation. The builder accepts either a bare `CodeUnit` (backward compatible) or an `EmbeddingTextContext` with enrichment data from the call graph, event flows, summaries, and clusters.
+
+Fields are ordered by priority for 128-token local model truncation:
 
 ```typescript
-interface EmbeddableCodeUnit {
-  // Combined into a single text for embedding
-  filePath: string;
-  name: string;
-  unitType: string;        // FUNCTION, CLASS, METHOD, etc.
-  signature?: string;      // Type signature if available
-  patterns: string[];      // Pattern descriptions (API_ENDPOINT, DATABASE_READ, etc.)
-  sourcePreview: string;   // First N lines of source code
+interface EmbeddingTextContext {
+  readonly unit: CodeUnit;
+  readonly summary?: string;       // LLM-generated summary (truncated to 50 words)
+  readonly callers?: string[];     // Functions that call this unit
+  readonly callees?: string[];     // Functions this unit calls
+  readonly events?: string[];      // Events emitted/subscribed
+  readonly clusterName?: string;   // Feature area cluster name
 }
 
-function buildEmbeddingText(unit: EmbeddableCodeUnit): string {
-  const parts = [
-    `${unit.unitType}: ${unit.name}`,
-    `File: ${unit.filePath}`,
-    unit.signature ? `Signature: ${unit.signature}` : null,
-    unit.patterns.length > 0 ? `Patterns: ${unit.patterns.join(', ')}` : null,
-    `Source:\n${unit.sourcePreview}`,
-  ];
-  return parts.filter(Boolean).join('\n');
-}
+// Priority order in generated text:
+// 1. Name and location
+// 2. Flags (async, exported)
+// 3. Summary (first 50 words)
+// 4. Patterns (API_ENDPOINT, DATABASE_READ, etc.)
+// 5. Complexity level
+// 6. Callers
+// 7. Callees
+// 8. Events
+// 9. Cluster
 ```
 
 ### 2.2 Embedding Provider Abstraction
@@ -114,18 +115,23 @@ class OpenAIEmbeddingProvider implements IEmbeddingProvider {
 ### 2.3 Embedding Generation Pipeline
 
 ```
-Analysis Complete
+Analysis Complete (code units, call graph, events, summaries, clusters)
       |
       v
-For each code unit:
-  1. Build embedding text from code unit metadata + source preview
-  2. Generate embedding via IEmbeddingProvider
-  3. Store embedding in vector index
-  4. Store metadata mapping (index position -> code unit ID)
+EmbeddingPipeline.indexAll():
+  1. Load all code units from repository
+  2. Pre-load enrichment maps (summaries, callers, callees, events, clusters)
+  3. For each code unit in batches of 50:
+     a. Build EmbeddingTextContext from unit + enrichment maps
+     b. Generate embedding text with priority-ordered fields
+     c. Generate embedding via IEmbeddingProvider
+     d. Store embedding in vector index with metadata
       |
       v
-Index saved to disk (~/.heury/project-name/embeddings.hnsw)
+Index ready for semantic search
 ```
+
+The `EmbeddingPipeline` accepts optional enrichment repositories (`IUnitSummaryRepository`, `IFunctionCallRepository`, `IEventFlowRepository`, `IFileClusterRepository`). When available, it pre-loads all enrichment data into in-memory lookup maps before batching, avoiding per-unit repository queries.
 
 Embeddings are generated as a post-analysis step, not during the main analysis pipeline. This keeps the core analysis fast and allows re-embedding without re-analyzing.
 
@@ -137,12 +143,17 @@ Embeddings are generated as a post-analysis step, not during the main analysis p
 
 ```
 User Query: "find functions that handle user authentication"
+  + optional filters: file_path_prefix, pattern_type, min_complexity, cluster_name
       |
       v
 1. Generate query embedding via IEmbeddingProvider
 2. Search vector index for k nearest neighbors
-3. Retrieve code unit metadata from SQLite
-4. Apply post-filters (file path, pattern type, complexity, etc.)
+3. Retrieve code unit metadata from SQLite (enrich with full CodeUnit data)
+4. Apply post-filters:
+   - file_path_prefix: filePath.startsWith(prefix) — works even without codeUnitRepo
+   - pattern_type: unit has at least one pattern of this type — requires codeUnitRepo
+   - min_complexity: unit.complexityScore >= threshold — requires codeUnitRepo
+   - cluster_name: unit belongs to named cluster — requires codeUnitRepo + fileClusterRepo
 5. Return ranked results with similarity scores
       |
       v
@@ -197,17 +208,17 @@ Vector search is exposed as an MCP tool for LLM consumption:
 
 ```typescript
 const vectorSearchDefinition = {
-  name: 'vector_search',
-  description: 'Semantic search across code units by meaning. Complements keyword search.',
+  name: 'vector-search',
+  description: 'Semantic search across code units using vector embeddings.',
   inputSchema: {
     type: 'object',
     properties: {
       query: { type: 'string', description: 'Natural language search query' },
-      limit: { type: 'number', description: 'Max results (default: 10)' },
-      min_similarity: { type: 'number', description: 'Min similarity threshold 0-1' },
-      file_path: { type: 'string', description: 'Filter by file path prefix' },
-      unit_types: { type: 'array', items: { type: 'string' } },
-      pattern_types: { type: 'array', items: { type: 'string' } },
+      limit: { type: 'number', description: 'Max results (default 10)' },
+      file_path_prefix: { type: 'string', description: 'Only return results whose filePath starts with this prefix (e.g., "src/api/")' },
+      pattern_type: { type: 'string', description: 'Only return results that have at least one pattern of this type (e.g., "API_ENDPOINT", "DATABASE_READ")' },
+      min_complexity: { type: 'number', description: 'Only return results with complexity score >= this value' },
+      cluster_name: { type: 'string', description: 'Only return results that belong to a cluster with this name' },
     },
     required: ['query'],
   },

@@ -124,6 +124,7 @@ Ported from Ludflow's proven analysis capabilities. Heuristic regex-based extrac
 | **Import Graph Clustering** | Connected-component clustering on the import graph with directory-boundary splitting for large components; identifies feature areas |
 | **Pattern Template Detection** | Identifies recurring pattern type combinations across code units, selects canonical examples as templates, and tracks followers |
 | **Impact Analysis** | BFS transitive dependency computation and Tarjan's SCC circular dependency detection for change risk assessment |
+| **Enriched Embeddings** | Embedding text includes LLM summaries, call graph relationships, event names, and cluster membership for more semantic vector search |
 | **LLM Enrichment (BYOK)** | Optional AI-generated function summaries via Anthropic, OpenAI, or Gemini APIs |
 
 ### Language Support
@@ -191,7 +192,7 @@ Simplified from Ludflow's 18 tools to a focused set for local codebase analysis:
 
 | Tool | Purpose |
 |------|---------|
-| `vector_search` | Semantic search across all analysis data |
+| `vector_search` | Semantic search across code units with enriched embeddings (summaries, call graph, events, clusters) and post-filters (file_path_prefix, pattern_type, min_complexity, cluster_name) |
 
 ### What Was Removed (Ludflow-specific)
 

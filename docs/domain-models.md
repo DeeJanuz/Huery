@@ -592,6 +592,37 @@ OPTIONS
 
 ---
 
+## Embedding Models
+
+### EmbeddingTextContext
+**Purpose:** Enriched context for building search-optimized embedding text. Wraps a CodeUnit with additional structural data from the call graph, event flows, LLM summaries, and file clusters.
+
+**Properties:**
+- unit: CodeUnit - The code unit to embed
+- summary: string? - LLM-generated summary (truncated to 50 words in output)
+- callers: string[]? - Names of functions that call this unit
+- callees: string[]? - Names of functions this unit calls
+- events: string[]? - Event names emitted or subscribed by this unit
+- clusterName: string? - Name of the feature area cluster this unit belongs to
+
+**Used by:** `buildEmbeddingText()` in `src/adapters/embedding/embedding-text-builder.ts`
+
+---
+
+### EmbeddingPipelineDependencies
+**Purpose:** Dependencies for the EmbeddingPipeline application service.
+
+**Properties:**
+- codeUnitRepo: ICodeUnitRepository - Required
+- embeddingProvider: IEmbeddingProvider - Required
+- vectorSearch: IVectorSearchService - Required
+- unitSummaryRepo: IUnitSummaryRepository? - Optional, for enriching embeddings with LLM summaries
+- functionCallRepo: IFunctionCallRepository? - Optional, for enriching embeddings with caller/callee data
+- eventFlowRepo: IEventFlowRepository? - Optional, for enriching embeddings with event names
+- fileClusterRepo: IFileClusterRepository? - Optional, for enriching embeddings with cluster names
+
+---
+
 ## Model Relationships
 
 ```

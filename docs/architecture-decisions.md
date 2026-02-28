@@ -266,6 +266,7 @@ Add a Deep Structural Analysis phase (Path C) as a post-processing step after th
 - **9 new repository ports/adapters:** IFunctionCallRepository, ITypeFieldRepository, IEventFlowRepository, ISchemaModelRepository, IUnitSummaryRepository, IGuardClauseRepository, IFileClusterRepository, IPatternTemplateRepository, ILlmProvider
 - **10 new MCP tools:** trace-call-chain, get-event-flow, get-data-models, get-function-context, get-patterns-by-type, get-unit-summaries, get-function-guards, get-feature-area, find-implementation-pattern, plan-change-impact
 - **Enhanced manifests:** MODULES.md includes type fields and feature area clustering, PATTERNS.md includes event flows and convention sections from pattern templates, HOTSPOTS.md includes fan-out analysis, DEPENDENCIES.md includes circular dependency detection, new SCHEMA.md for data models
+- **Enriched embeddings:** Embedding text builder includes LLM summaries, callers/callees from call graph, events, and cluster membership with priority ordering for 128-token truncation; vector-search MCP tool supports post-filtering by file_path_prefix, pattern_type, min_complexity, cluster_name
 - **Optional BYOK LLM enrichment:** Anthropic, OpenAI, or Gemini for AI-generated function summaries
 
 #### Rationale
@@ -338,3 +339,4 @@ Add a Deep Structural Analysis phase (Path C) as a post-processing step after th
 | 2026-02-28 | ADR-005 | Updated: Import graph clustering (file_clusters/file_cluster_members tables), get-feature-area MCP tool, feature areas in MODULES.md manifests | System |
 | 2026-02-28 | ADR-005 | Updated: Pattern template detection (pattern_templates/pattern_template_followers tables), find-implementation-pattern MCP tool, Conventions section in PATTERNS.md | System |
 | 2026-02-28 | ADR-005 | Updated: Impact analysis (transitive deps via BFS, circular deps via Tarjan's SCC), plan-change-impact MCP tool, Circular Dependencies section in DEPENDENCIES.md | System |
+| 2026-02-28 | ADR-005 | Updated: Enriched embeddings (summaries, callers/callees, events, clusters in embedding text with priority ordering), vector-search post-filters (file_path_prefix, pattern_type, min_complexity, cluster_name) | System |
