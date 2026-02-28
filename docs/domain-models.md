@@ -46,8 +46,9 @@ METHOD          // Method inside a class
 STRUCT          // Struct declaration (Go, Rust, C#)
 TRAIT           // Trait/interface declaration (Rust)
 INTERFACE       // Interface declaration (Java, C#, Go)
-ENUM            // Enum declaration (Rust, Java, C#)
+ENUM            // Enum declaration (Rust, Java, C#, TypeScript)
 IMPL_BLOCK      // Implementation block (Rust impl)
+TYPE_ALIAS      // Type alias declaration (TypeScript)
 ```
 
 ---
