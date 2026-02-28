@@ -15,6 +15,7 @@ export type {
 // Shared utilities
 export {
   findBlockEnd,
+  findBlockEndIndex,
   findIndentationBlockEnd,
   getLineNumber,
   isInsideStringOrComment,

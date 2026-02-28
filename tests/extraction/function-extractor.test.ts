@@ -169,6 +169,93 @@ describe('extractCodeUnits', () => {
       expect(methodNames).not.toContain('constructor');
       expect(methodNames).toContain('getData');
     });
+
+    it('should not capture methods from a subsequent class when class content is precisely sliced', () => {
+      const code = [
+        'class First {',
+        '  alpha() {',
+        '    return 1;',
+        '  }',
+        '}',
+        '',
+        'class Second {',
+        '  beta() {',
+        '    return 2;',
+        '  }',
+        '}',
+      ].join('\n');
+      const units = extractCodeUnits(code, 'test.ts');
+      const firstClass = units.find(u => u.name === 'First');
+      const secondClass = units.find(u => u.name === 'Second');
+      expect(firstClass).toBeDefined();
+      expect(secondClass).toBeDefined();
+      // First class should only have alpha, not beta
+      const firstMethodNames = firstClass!.children!.map(c => c.name);
+      expect(firstMethodNames).toContain('alpha');
+      expect(firstMethodNames).not.toContain('beta');
+      // Second class should only have beta
+      const secondMethodNames = secondClass!.children!.map(c => c.name);
+      expect(secondMethodNames).toContain('beta');
+      expect(secondMethodNames).not.toContain('alpha');
+    });
+
+    it('should correctly extract methods from a class with long lines', () => {
+      // Lines > 200 chars each to break the old * 200 heuristic (undershoot)
+      const longParam = 'a'.repeat(250);
+      const code = [
+        'class LongClass {',
+        `  doStuff(${longParam}: string) {`,
+        '    return 1;',
+        '  }',
+        `  doMore(${longParam}: string) {`,
+        '    return 2;',
+        '  }',
+        '}',
+      ].join('\n');
+      const units = extractCodeUnits(code, 'test.ts');
+      const classUnit = units.find(u => u.name === 'LongClass');
+      expect(classUnit).toBeDefined();
+      expect(classUnit!.children).toBeDefined();
+      expect(classUnit!.children!.length).toBe(2);
+      expect(classUnit!.children![0].name).toBe('doStuff');
+      expect(classUnit!.children![1].name).toBe('doMore');
+    });
+
+    it('should ensure methodLineEnd >= methodLineStart (no negative ranges)', () => {
+      const code = [
+        'class Guard {',
+        '  process() {',
+        '    return true;',
+        '  }',
+        '}',
+      ].join('\n');
+      const units = extractCodeUnits(code, 'test.ts');
+      const classUnit = units.find(u => u.name === 'Guard');
+      expect(classUnit).toBeDefined();
+      for (const method of classUnit!.children!) {
+        expect(method.lineEnd).toBeGreaterThanOrEqual(method.lineStart);
+      }
+    });
+
+    it('should not capture standalone functions after a class as class methods', () => {
+      const code = [
+        'class MyClass {',
+        '  doWork() {',
+        '    return 1;',
+        '  }',
+        '}',
+        '',
+        'function standaloneFunction() {',
+        '  return 42;',
+        '}',
+      ].join('\n');
+      const units = extractCodeUnits(code, 'test.ts');
+      const classUnit = units.find(u => u.name === 'MyClass');
+      expect(classUnit).toBeDefined();
+      const methodNames = classUnit!.children!.map(c => c.name);
+      expect(methodNames).toContain('doWork');
+      expect(methodNames).not.toContain('standaloneFunction');
+    });
   });
 
   describe('multiple declarations', () => {

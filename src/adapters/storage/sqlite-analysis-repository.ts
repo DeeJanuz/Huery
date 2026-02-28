@@ -65,6 +65,7 @@ export class SqliteAnalysisRepository implements IAnalysisRepository {
           patternsDetected: row.patterns_detected!,
           dependenciesFound: row.dependencies_found!,
           envVariablesFound: row.env_variables_found!,
+          filesWithErrors: 0,
           duration: row.duration!,
         })
       : undefined;

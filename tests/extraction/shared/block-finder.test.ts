@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   findBlockEnd,
+  findBlockEndIndex,
   findIndentationBlockEnd,
   getLineNumber,
   isInsideStringOrComment,
@@ -58,6 +59,107 @@ describe('findBlockEnd', () => {
     const startIndex = code.indexOf('{');
     const result = findBlockEnd(code, startIndex);
     expect(result).toBe(5);
+  });
+
+  it('should ignore unbalanced open brace inside single-quoted string', () => {
+    const code = [
+      "function foo() {",
+      "  const x = '{';",
+      "  return x;",
+      "}",
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(4);
+  });
+
+  it('should ignore unbalanced open brace inside double-quoted string', () => {
+    const code = [
+      'function foo() {',
+      '  const x = "{";',
+      '  return x;',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(4);
+  });
+
+  it('should ignore unbalanced brace inside template literal', () => {
+    const code = [
+      'function foo() {',
+      '  const x = `{`;',
+      '  return x;',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(4);
+  });
+
+  it('should ignore unbalanced braces inside regex literal', () => {
+    // Regex /\{[^}]*$/ has { without matching } at same depth
+    const code = [
+      'function foo() {',
+      '  const re = /\\{[^}]*$/;',
+      '  return re;',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(4);
+  });
+
+  it('should ignore unbalanced open brace inside single-line comment', () => {
+    const code = [
+      'function foo() {',
+      '  // { unclosed brace in comment',
+      '  return 1;',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(4);
+  });
+
+  it('should ignore unbalanced braces inside multi-line comment', () => {
+    const code = [
+      'function foo() {',
+      '  /* { this is',
+      '     an unclosed brace comment */',
+      '  return 1;',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(5);
+  });
+
+  it('should handle escaped quotes inside strings with unbalanced braces', () => {
+    const code = [
+      'function foo() {',
+      '  const x = "escaped \\"{ quote";',
+      '  return x;',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(4);
+  });
+
+  it('should handle mixed strings, comments, and regex with unbalanced braces', () => {
+    const code = [
+      'function foo() {',
+      '  const a = "{";',
+      '  // {',
+      '  const b = /\\{/;',
+      '  /* { */',
+      '  return 1;',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEnd(code, startIndex);
+    expect(result).toBe(7);
   });
 });
 
@@ -124,6 +226,64 @@ describe('isInsideStringOrComment', () => {
     const code = 'const obj = { key: "value" };';
     const braceIndex = code.indexOf('{');
     expect(isInsideStringOrComment(code, braceIndex)).toBe(false);
+  });
+});
+
+describe('findBlockEndIndex', () => {
+  it('should return the character index of the closing brace', () => {
+    const code = 'function foo() {\n  return 1;\n}';
+    const startIndex = code.indexOf('{');
+    const result = findBlockEndIndex(code, startIndex);
+    expect(result).toBe(code.lastIndexOf('}'));
+  });
+
+  it('should handle nested braces and return outer closing brace index', () => {
+    const code = 'function foo() {\n  if (true) {\n    return 1;\n  }\n}';
+    const startIndex = code.indexOf('{');
+    const result = findBlockEndIndex(code, startIndex);
+    expect(result).toBe(code.lastIndexOf('}'));
+  });
+
+  it('should return -1 when no matching closing brace is found', () => {
+    const code = 'function foo() {\n  return 1;\n';
+    const startIndex = code.indexOf('{');
+    const result = findBlockEndIndex(code, startIndex);
+    expect(result).toBe(-1);
+  });
+
+  it('should skip braces inside strings', () => {
+    const code = [
+      'class Foo {',
+      '  method() {',
+      '    const x = "{";',
+      '    return x;',
+      '  }',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEndIndex(code, startIndex);
+    expect(result).toBe(code.lastIndexOf('}'));
+  });
+
+  it('should skip braces inside comments', () => {
+    const code = [
+      'class Foo {',
+      '  // { not a real brace',
+      '  method() {',
+      '    return 1;',
+      '  }',
+      '}',
+    ].join('\n');
+    const startIndex = code.indexOf('{');
+    const result = findBlockEndIndex(code, startIndex);
+    expect(result).toBe(code.lastIndexOf('}'));
+  });
+
+  it('should handle single-line blocks', () => {
+    const code = 'function foo() { return 1; }';
+    const startIndex = code.indexOf('{');
+    const result = findBlockEndIndex(code, startIndex);
+    expect(result).toBe(code.lastIndexOf('}'));
   });
 });
 

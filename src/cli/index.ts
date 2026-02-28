@@ -16,20 +16,20 @@ program
   .command('init')
   .description('Initialize heury in the current directory')
   .option('-d, --dir <directory>', 'Target directory', '.')
-  .action(initCommand);
+  .action((options) => initCommand(options));
 
 program
   .command('analyze')
   .description('Analyze the codebase')
   .option('-d, --dir <directory>', 'Project directory', '.')
   .option('--full', 'Force full re-analysis', false)
-  .action(analyzeCommand);
+  .action((options) => analyzeCommand(options));
 
 program
   .command('serve')
   .description('Start the MCP server')
   .option('-d, --dir <directory>', 'Project directory', '.')
   .option('--transport <type>', 'Transport type (stdio|http)', 'stdio')
-  .action(serveCommand);
+  .action((options) => serveCommand(options));
 
 program.parse();

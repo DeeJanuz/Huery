@@ -6,10 +6,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "heury": "./dist/cli.js"
+    "heury": "./dist/cli/index.js"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && cp -r src/adapters/storage/migrations dist/cli/",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

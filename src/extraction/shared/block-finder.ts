@@ -45,7 +45,64 @@ export function findBlockEnd(content: string, startIndex: number): number {
 
     if (char === '\n') {
       lineNumber++;
-    } else if (char === '{') {
+      continue;
+    }
+
+    // Skip single-line comments
+    if (char === '/' && content[i + 1] === '/') {
+      const newlineIdx = content.indexOf('\n', i);
+      if (newlineIdx === -1) break;
+      i = newlineIdx - 1; // will be incremented by for loop
+      continue;
+    }
+
+    // Skip multi-line comments
+    if (char === '/' && content[i + 1] === '*') {
+      const endIdx = content.indexOf('*/', i + 2);
+      if (endIdx === -1) break;
+      // Count newlines inside the comment
+      for (let j = i; j < endIdx + 2; j++) {
+        if (content[j] === '\n') lineNumber++;
+      }
+      i = endIdx + 1; // skip past */
+      continue;
+    }
+
+    // Skip string literals (single-quoted, double-quoted, template literals)
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char;
+      i++;
+      while (i < content.length) {
+        if (content[i] === '\\') {
+          i++; // skip escaped character
+        } else if (content[i] === quote) {
+          break;
+        } else if (content[i] === '\n') {
+          lineNumber++;
+        }
+        i++;
+      }
+      continue;
+    }
+
+    // Skip regex literals
+    if (char === '/' && isRegexStart(content, i)) {
+      i++;
+      while (i < content.length) {
+        if (content[i] === '\\') {
+          i++; // skip escaped character
+        } else if (content[i] === '/') {
+          break;
+        } else if (content[i] === '\n') {
+          // Regex can't span lines; this isn't a regex
+          break;
+        }
+        i++;
+      }
+      continue;
+    }
+
+    if (char === '{') {
       depth++;
       foundOpenBrace = true;
     } else if (char === '}') {
@@ -58,6 +115,112 @@ export function findBlockEnd(content: string, startIndex: number): number {
 
   // If we couldn't find the end, estimate based on content length
   return lineNumber + 10;
+}
+
+/**
+ * Find the character index of the closing brace of a brace-delimited code block.
+ * Similar to findBlockEnd but returns the character index instead of the line number.
+ *
+ * @param content - Full file content
+ * @param startIndex - Character index to start searching from (should be at or before the opening brace)
+ * @returns The character index of the closing brace, or -1 if not found
+ */
+export function findBlockEndIndex(content: string, startIndex: number): number {
+  let depth = 0;
+  let foundOpenBrace = false;
+
+  for (let i = startIndex; i < content.length; i++) {
+    const char = content[i];
+
+    if (char === '\n') {
+      continue;
+    }
+
+    // Skip single-line comments
+    if (char === '/' && content[i + 1] === '/') {
+      const newlineIdx = content.indexOf('\n', i);
+      if (newlineIdx === -1) break;
+      i = newlineIdx - 1; // will be incremented by for loop
+      continue;
+    }
+
+    // Skip multi-line comments
+    if (char === '/' && content[i + 1] === '*') {
+      const endIdx = content.indexOf('*/', i + 2);
+      if (endIdx === -1) break;
+      i = endIdx + 1; // skip past */
+      continue;
+    }
+
+    // Skip string literals (single-quoted, double-quoted, template literals)
+    if (char === "'" || char === '"' || char === '`') {
+      const quote = char;
+      i++;
+      while (i < content.length) {
+        if (content[i] === '\\') {
+          i++; // skip escaped character
+        } else if (content[i] === quote) {
+          break;
+        }
+        i++;
+      }
+      continue;
+    }
+
+    // Skip regex literals
+    if (char === '/' && isRegexStart(content, i)) {
+      i++;
+      while (i < content.length) {
+        if (content[i] === '\\') {
+          i++; // skip escaped character
+        } else if (content[i] === '/') {
+          break;
+        } else if (content[i] === '\n') {
+          // Regex can't span lines; this isn't a regex
+          break;
+        }
+        i++;
+      }
+      continue;
+    }
+
+    if (char === '{') {
+      depth++;
+      foundOpenBrace = true;
+    } else if (char === '}') {
+      depth--;
+      if (foundOpenBrace && depth === 0) {
+        return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Heuristic to determine if a '/' at the given position starts a regex literal.
+ * Returns true if the '/' is preceded by a token that cannot end an expression
+ * (e.g., operator, punctuation, keyword, or start of line).
+ */
+function isRegexStart(content: string, index: number): boolean {
+  // Look backwards past whitespace to find the preceding non-whitespace character
+  let j = index - 1;
+  while (j >= 0 && (content[j] === ' ' || content[j] === '\t')) {
+    j--;
+  }
+  if (j < 0) return true; // start of content
+
+  const prevChar = content[j];
+
+  // After these characters, '/' starts a regex (operators, punctuation)
+  if ('=({[;,!&|?:+->~^%*/\n'.includes(prevChar)) {
+    return true;
+  }
+
+  // After 'return', 'typeof', etc. it's also a regex, but for our purposes
+  // the simple character check covers the common cases.
+  return false;
 }
 
 /**

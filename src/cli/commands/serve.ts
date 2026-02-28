@@ -14,7 +14,9 @@ export async function serveCommand(
   const fs = fileSystem ?? new NodeFileSystem();
 
   try {
-    const { dependencies } = await createCompositionRoot(fs);
+    const { dependencies } = await createCompositionRoot(fs, {
+      dbPath: `${options.dir}/.heury/heury.db`,
+    });
 
     if (options.transport === 'stdio') {
       console.error(`Starting heury MCP server (stdio) in ${options.dir}`);

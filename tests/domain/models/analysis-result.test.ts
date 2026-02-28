@@ -29,6 +29,7 @@ describe('createAnalysisResult', () => {
       patternsDetected: 20,
       dependenciesFound: 30,
       envVariablesFound: 5,
+      filesWithErrors: 0,
       duration: 1200,
     });
 
@@ -45,6 +46,7 @@ describe('createAnalysisStats', () => {
       patternsDetected: 20,
       dependenciesFound: 30,
       envVariablesFound: 5,
+      filesWithErrors: 0,
       duration: 1200,
     });
 
@@ -53,6 +55,7 @@ describe('createAnalysisStats', () => {
     expect(stats.patternsDetected).toBe(20);
     expect(stats.dependenciesFound).toBe(30);
     expect(stats.envVariablesFound).toBe(5);
+    expect(stats.filesWithErrors).toBe(0);
     expect(stats.duration).toBe(1200);
   });
 
@@ -64,6 +67,7 @@ describe('createAnalysisStats', () => {
         patternsDetected: 0,
         dependenciesFound: 0,
         envVariablesFound: 0,
+        filesWithErrors: 0,
         duration: 0,
       })
     ).toThrow();

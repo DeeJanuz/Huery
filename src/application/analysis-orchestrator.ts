@@ -12,6 +12,7 @@
  * Simplified from Ludflow's distributed orchestrator for local-first use.
  */
 
+import { isAbsolute, join } from 'node:path';
 import {
   createAnalysisResult,
   createAnalysisStats,
@@ -58,6 +59,7 @@ export class AnalysisOrchestrator {
       const allFiles = await this.listAllFiles(options.rootDir);
       const filterOpts = this.buildFilterOptions(options);
       const counts = await this.processFiles(allFiles, {
+        rootDir: options.rootDir,
         filterOpts,
         clearBeforeProcessing: false,
       });
@@ -89,6 +91,7 @@ export class AnalysisOrchestrator {
     try {
       const filterOpts = this.buildFilterOptions(options);
       const counts = await this.processFiles(changedFiles, {
+        rootDir: options.rootDir,
         filterOpts,
         clearBeforeProcessing: true,
       });
@@ -110,9 +113,18 @@ export class AnalysisOrchestrator {
   /**
    * Shared file processing loop used by both analyze() and analyzeIncremental().
    */
+  /**
+   * Resolve a file path against rootDir if it is relative.
+   * Absolute paths are returned as-is.
+   */
+  private resolveFilePath(filePath: string, rootDir: string): string {
+    return isAbsolute(filePath) ? filePath : join(rootDir, filePath);
+  }
+
   private async processFiles(
     files: string[],
     options: {
+      rootDir: string;
       filterOpts: Partial<FileFilterOptions>;
       clearBeforeProcessing: boolean;
     },
@@ -122,17 +134,21 @@ export class AnalysisOrchestrator {
     patternsDetected: number;
     dependenciesFound: number;
     envVariablesFound: number;
+    filesWithErrors: number;
   }> {
     let filesProcessed = 0;
     let codeUnitsExtracted = 0;
     let patternsDetected = 0;
     let dependenciesFound = 0;
     let envVariablesFound = 0;
+    let filesWithErrors = 0;
 
     for (const filePath of files) {
+      const absolutePath = this.resolveFilePath(filePath, options.rootDir);
+
       // Handle .env.example files
       if (isEnvExampleFile(filePath)) {
-        const content = await this.deps.fileSystem.readFile(filePath);
+        const content = await this.deps.fileSystem.readFile(absolutePath);
         const envVars = extractEnvVariables(content);
         if (options.clearBeforeProcessing) {
           this.deps.envVarRepo.clear();
@@ -160,11 +176,17 @@ export class AnalysisOrchestrator {
         this.deps.dependencyRepo.deleteBySourceFile(filePath);
       }
 
-      const result = await this.processOneFile(filePath);
-      filesProcessed++;
-      codeUnitsExtracted += result.codeUnitsCount;
-      patternsDetected += result.patternsCount;
-      dependenciesFound += result.dependenciesCount;
+      try {
+        const result = await this.processOneFile(filePath, options.rootDir);
+        filesProcessed++;
+        codeUnitsExtracted += result.codeUnitsCount;
+        patternsDetected += result.patternsCount;
+        dependenciesFound += result.dependenciesCount;
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Warning: Failed to process file '${filePath}': ${message}`);
+        filesWithErrors++;
+      }
     }
 
     return {
@@ -173,10 +195,11 @@ export class AnalysisOrchestrator {
       patternsDetected,
       dependenciesFound,
       envVariablesFound,
+      filesWithErrors,
     };
   }
 
-  private async processOneFile(filePath: string): Promise<{
+  private async processOneFile(filePath: string, rootDir: string): Promise<{
     codeUnitsCount: number;
     patternsCount: number;
     dependenciesCount: number;
@@ -186,7 +209,8 @@ export class AnalysisOrchestrator {
       return { codeUnitsCount: 0, patternsCount: 0, dependenciesCount: 0 };
     }
 
-    const content = await this.deps.fileSystem.readFile(filePath);
+    const absolutePath = this.resolveFilePath(filePath, rootDir);
+    const content = await this.deps.fileSystem.readFile(absolutePath);
     const result = processFile(content, filePath, extractor);
 
     // Store code units

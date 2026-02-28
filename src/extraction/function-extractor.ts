@@ -15,7 +15,7 @@
 import { CodeUnitType } from '@/domain/models/index.js';
 
 import type { CodeUnitDeclaration } from './types.js';
-import { findBlockEnd, getLineNumber, isInsideStringOrComment } from './shared/block-finder.js';
+import { findBlockEnd, findBlockEndIndex, getLineNumber, isInsideStringOrComment } from './shared/block-finder.js';
 
 /**
  * Detection patterns for JavaScript/TypeScript
@@ -245,7 +245,10 @@ function extractClassMethods(
   seenUnits: Set<string>,
 ): CodeUnitDeclaration[] {
   const methods: CodeUnitDeclaration[] = [];
-  const classContent = content.slice(classMatch.index, classMatch.index + (classLineEnd - classLineStart + 1) * 200);
+  const classEndIndex = findBlockEndIndex(content, classMatch.index + classMatch[0].length - 1);
+  const classContent = classEndIndex !== -1
+    ? content.slice(classMatch.index, classEndIndex + 1)
+    : content.slice(classMatch.index);
   const methodPattern = new RegExp(PATTERNS.classMethod.source, 'g');
   let methodMatch;
 
@@ -267,7 +270,10 @@ function extractClassMethods(
     const methodParams = methodMatch[3]?.trim() || '';
     const methodReturnType = methodMatch[4]?.trim() || undefined;
     const methodLineStart = classLineStart + getLineNumber(classContent, methodMatch.index) - 1;
-    const methodLineEnd = findBlockEnd(classContent, methodMatch.index + methodMatch[0].length - 1) + classLineStart - 1;
+    let methodLineEnd = findBlockEnd(classContent, methodMatch.index + methodMatch[0].length - 1) + classLineStart - 1;
+    if (methodLineEnd < methodLineStart) {
+      methodLineEnd = methodLineStart;
+    }
 
     methods.push({
       name: methodName,

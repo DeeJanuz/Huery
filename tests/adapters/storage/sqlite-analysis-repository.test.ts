@@ -24,6 +24,7 @@ describe('SqliteAnalysisRepository', () => {
       patternsDetected: 20,
       dependenciesFound: 15,
       envVariablesFound: 3,
+      filesWithErrors: 0,
       duration: 1500,
     });
     const result = createAnalysisResult({ success: true, stats });

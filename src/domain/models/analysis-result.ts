@@ -4,6 +4,7 @@ export interface AnalysisStats {
   readonly patternsDetected: number;
   readonly dependenciesFound: number;
   readonly envVariablesFound: number;
+  readonly filesWithErrors: number;
   readonly duration: number;
 }
 
@@ -33,6 +34,7 @@ interface CreateAnalysisStatsParams {
   patternsDetected: number;
   dependenciesFound: number;
   envVariablesFound: number;
+  filesWithErrors: number;
   duration: number;
 }
 
@@ -50,6 +52,7 @@ export function createAnalysisStats(params: CreateAnalysisStatsParams): Analysis
     patternsDetected: params.patternsDetected,
     dependenciesFound: params.dependenciesFound,
     envVariablesFound: params.envVariablesFound,
+    filesWithErrors: params.filesWithErrors,
     duration: params.duration,
   };
 }
