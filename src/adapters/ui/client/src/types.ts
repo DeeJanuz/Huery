@@ -151,3 +151,13 @@ export interface Dependency {
   readonly importType: string;
   readonly importedNames: string[];
 }
+
+export interface ClusterRelationshipEdge {
+  readonly sourceClusterId: string;
+  readonly targetClusterId: string;
+  readonly weight: number;
+}
+
+export interface ClusterRelationships {
+  readonly edges: ClusterRelationshipEdge[];
+}

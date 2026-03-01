@@ -129,4 +129,48 @@ describe('clusters routes', () => {
       expect((body.members as Array<Record<string, unknown>>)[0].filePath).toBe('src/core/index.ts');
     });
   });
+
+  describe('GET /api/clusters/relationships', () => {
+    it('should return empty edges when no clusters exist', async () => {
+      const resp = await request(app, '/api/clusters/relationships');
+
+      expect(resp.status).toBe(200);
+      expect(resp.body).toEqual({ edges: [] });
+    });
+
+    it('should return correct edge data with weight for cross-cluster deps', async () => {
+      const c1 = createFileCluster({
+        id: 'c1', name: 'auth', cohesion: 0.8, internalEdges: 0, externalEdges: 1,
+      });
+      const c2 = createFileCluster({
+        id: 'c2', name: 'db', cohesion: 0.9, internalEdges: 0, externalEdges: 1,
+      });
+      fileClusterRepo.save(c1, [
+        createFileClusterMember({ clusterId: 'c1', filePath: 'src/auth/login.ts', isEntryPoint: true }),
+        createFileClusterMember({ clusterId: 'c1', filePath: 'src/auth/session.ts', isEntryPoint: false }),
+      ]);
+      fileClusterRepo.save(c2, [
+        createFileClusterMember({ clusterId: 'c2', filePath: 'src/db/pool.ts', isEntryPoint: false }),
+      ]);
+
+      // Two deps from auth cluster to db cluster
+      dependencyRepo.save(createFileDependency({
+        sourceFile: 'src/auth/login.ts', targetFile: 'src/db/pool.ts', importType: ImportType.NAMED,
+      }));
+      dependencyRepo.save(createFileDependency({
+        sourceFile: 'src/auth/session.ts', targetFile: 'src/db/pool.ts', importType: ImportType.NAMED,
+      }));
+
+      const resp = await request(app, '/api/clusters/relationships');
+      const body = resp.body as { edges: Array<{ sourceClusterId: string; targetClusterId: string; weight: number }> };
+
+      expect(resp.status).toBe(200);
+      expect(body.edges).toHaveLength(1);
+      expect(body.edges[0]).toEqual({
+        sourceClusterId: 'c1',
+        targetClusterId: 'c2',
+        weight: 2,
+      });
+    });
+  });
 });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ClusterGraph } from '../components/ClusterGraph';
 import { CodeUnitCard } from '../components/CodeUnitCard';
 import { useApi } from '../hooks/useApi';
-import type { Cluster, ClusterDetail } from '../types';
+import type { Cluster, ClusterDetail, ClusterRelationships } from '../types';
 
 interface ClusterMapPageProps {
   onNavigate: (hash: string) => void;
@@ -10,6 +10,7 @@ interface ClusterMapPageProps {
 
 export const ClusterMapPage: React.FC<ClusterMapPageProps> = ({ onNavigate }) => {
   const { data: clusters, loading, error } = useApi<Cluster[]>('/api/clusters');
+  const { data: relationships } = useApi<ClusterRelationships>('/api/clusters/relationships');
   const [selectedClusterId, setSelectedClusterId] = useState<string | null>(null);
   const [clusterDetails, setClusterDetails] = useState<Map<string, ClusterDetail>>(new Map());
   const [detailLoading, setDetailLoading] = useState(false);
@@ -94,7 +95,7 @@ export const ClusterMapPage: React.FC<ClusterMapPageProps> = ({ onNavigate }) =>
         >
           <ClusterGraph
             clusters={clusters}
-            clusterDetails={clusterDetails}
+            relationships={relationships}
             selectedClusterId={selectedClusterId}
             onClusterClick={setSelectedClusterId}
           />

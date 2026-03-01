@@ -6,7 +6,7 @@
  * reused across the UI routes and (eventually) MCP tools.
  */
 
-import type { ICodeUnitRepository, IFileDependencyRepository } from '@/domain/ports/index.js';
+import type { ICodeUnitRepository, IFileDependencyRepository, IFileClusterRepository } from '@/domain/ports/index.js';
 
 export interface ClusterCodeUnit {
   id: string;
@@ -105,4 +105,51 @@ export function classifyClusterDependencies(
   }
 
   return { internalDeps, externalDeps };
+}
+
+export interface InterClusterEdge {
+  sourceClusterId: string;
+  targetClusterId: string;
+  weight: number;
+}
+
+/**
+ * Compute directed, weighted edges between clusters based on file-level dependencies.
+ *
+ * Each edge represents one or more file dependencies from files in the source
+ * cluster to files in the target cluster. The weight is the count of such deps.
+ * Same-cluster deps and deps involving un-clustered files are ignored.
+ */
+export function computeInterClusterEdges(
+  fileClusterRepo: IFileClusterRepository,
+  dependencyRepo: IFileDependencyRepository,
+): InterClusterEdge[] {
+  // Step 1: Build filePath → clusterId map
+  const fileToCluster = new Map<string, string>();
+  for (const { cluster, members } of fileClusterRepo.findAll()) {
+    for (const member of members) {
+      fileToCluster.set(member.filePath, cluster.id);
+    }
+  }
+
+  // Step 2: Iterate all deps, accumulate weights for cross-cluster pairs
+  const weightMap = new Map<string, number>();
+  for (const dep of dependencyRepo.findAll()) {
+    const sourceClusterId = fileToCluster.get(dep.sourceFile);
+    const targetClusterId = fileToCluster.get(dep.targetFile);
+    if (!sourceClusterId || !targetClusterId) continue;
+    if (sourceClusterId === targetClusterId) continue;
+
+    const key = `${sourceClusterId}->${targetClusterId}`;
+    weightMap.set(key, (weightMap.get(key) ?? 0) + 1);
+  }
+
+  // Step 3: Convert to array
+  const edges: InterClusterEdge[] = [];
+  for (const [key, weight] of weightMap) {
+    const [sourceClusterId, targetClusterId] = key.split('->');
+    edges.push({ sourceClusterId, targetClusterId, weight });
+  }
+
+  return edges;
 }

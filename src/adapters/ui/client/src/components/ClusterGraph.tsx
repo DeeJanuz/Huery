@@ -11,11 +11,11 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import dagre from '@dagrejs/dagre';
-import type { Cluster, ClusterDetail } from '../types';
+import type { Cluster, ClusterRelationships } from '../types';
 
 interface ClusterGraphProps {
   clusters: Cluster[];
-  clusterDetails: Map<string, ClusterDetail>;
+  relationships: ClusterRelationships | null;
   selectedClusterId: string | null;
   onClusterClick: (clusterId: string) => void;
 }
@@ -25,39 +25,30 @@ const NODE_HEIGHT = 80;
 
 function buildLayoutedElements(
   clusters: Cluster[],
-  clusterDetails: Map<string, ClusterDetail>,
+  relationships: ClusterRelationships | null,
 ): { nodes: Node[]; edges: Edge[] } {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80 });
+  g.setGraph({ rankdir: 'LR', nodesep: 60, ranksep: 120 });
 
   for (const cluster of clusters) {
     g.setNode(cluster.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
   }
 
   const edges: Edge[] = [];
-  const edgeSet = new Set<string>();
 
-  for (const [, detail] of clusterDetails) {
-    if (detail.externalDeps) {
-      for (const dep of detail.externalDeps) {
-        const sourceCluster = clusters.find((c) => c.id === dep.source || c.name === dep.source);
-        const targetCluster = clusters.find((c) => c.id === dep.target || c.name === dep.target);
-        if (sourceCluster && targetCluster && sourceCluster.id !== targetCluster.id) {
-          const edgeId = `${sourceCluster.id}-${targetCluster.id}`;
-          if (!edgeSet.has(edgeId)) {
-            edgeSet.add(edgeId);
-            g.setEdge(sourceCluster.id, targetCluster.id);
-            edges.push({
-              id: edgeId,
-              source: sourceCluster.id,
-              target: targetCluster.id,
-              style: { stroke: '#94a3b8', strokeWidth: 2 },
-              animated: true,
-            });
-          }
-        }
-      }
+  if (relationships?.edges) {
+    for (const rel of relationships.edges) {
+      const edgeId = `${rel.sourceClusterId}-${rel.targetClusterId}`;
+      g.setEdge(rel.sourceClusterId, rel.targetClusterId);
+      edges.push({
+        id: edgeId,
+        source: rel.sourceClusterId,
+        target: rel.targetClusterId,
+        style: { stroke: '#94a3b8', strokeWidth: Math.min(1 + rel.weight * 0.5, 4) },
+        animated: true,
+        label: rel.weight > 1 ? String(rel.weight) : undefined,
+      });
     }
   }
 
@@ -73,8 +64,8 @@ function buildLayoutedElements(
       },
       data: { cluster },
       type: 'clusterNode',
-      sourcePosition: Position.Bottom,
-      targetPosition: Position.Top,
+      sourcePosition: Position.Right,
+      targetPosition: Position.Left,
     };
   });
 
@@ -125,13 +116,13 @@ const nodeTypes = { clusterNode: ClusterNode };
 
 export const ClusterGraph: React.FC<ClusterGraphProps> = ({
   clusters,
-  clusterDetails,
+  relationships,
   selectedClusterId,
   onClusterClick,
 }) => {
   const { nodes, edges } = useMemo(
-    () => buildLayoutedElements(clusters, clusterDetails),
-    [clusters, clusterDetails],
+    () => buildLayoutedElements(clusters, relationships),
+    [clusters, relationships],
   );
 
   const nodesWithSelection = useMemo(

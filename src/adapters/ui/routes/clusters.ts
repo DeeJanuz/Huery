@@ -10,7 +10,7 @@ import type {
   IFileDependencyRepository,
 } from '@/domain/ports/index.js';
 import { wrapHandler } from '../route-handler.js';
-import { collectClusterCodeUnits, classifyClusterDependencies } from '../cluster-detail.js';
+import { collectClusterCodeUnits, classifyClusterDependencies, computeInterClusterEdges } from '../cluster-detail.js';
 
 interface ClustersDependencies {
   fileClusterRepo: IFileClusterRepository;
@@ -34,6 +34,11 @@ export function createClustersRoutes(deps: ClustersDependencies): ReturnType<typ
     }));
 
     res.json(items);
+  }));
+
+  router.get('/clusters/relationships', wrapHandler((_req: Request, res: Response) => {
+    const edges = computeInterClusterEdges(deps.fileClusterRepo, deps.dependencyRepo);
+    res.json({ edges });
   }));
 
   router.get('/clusters/:id', wrapHandler((req: Request, res: Response) => {
