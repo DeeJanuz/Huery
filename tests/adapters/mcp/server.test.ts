@@ -62,33 +62,20 @@ describe('createMcpServer', () => {
     const server = createMcpServer(mockDeps);
     const instructions = (server as any)._instructions as string;
 
-    // Verify key workflow steps are mentioned
-    expect(instructions).toContain('ORIENT');
-    expect(instructions).toContain('TARGET');
-    expect(instructions).toContain('DEEP READ');
-
-    // Verify key tools are mentioned
-    expect(instructions).toContain('get_analysis_stats');
-    expect(instructions).toContain('search_codebase');
-    expect(instructions).toContain('get_code_units');
-    expect(instructions).toContain('get_dependencies');
-    expect(instructions).toContain('vector_search');
-
-    // Verify manifest file references
+    // Verify planning phase guidance
+    expect(instructions).toContain('PLANNING');
     expect(instructions).toContain('MODULES.md');
     expect(instructions).toContain('PATTERNS.md');
     expect(instructions).toContain('DEPENDENCIES.md');
     expect(instructions).toContain('HOTSPOTS.md');
-  });
 
-  it('should include deep analysis tools in instructions', () => {
-    const server = createMcpServer(mockDeps);
-    const instructions = (server as any)._instructions as string;
+    // Verify implementation phase guidance
+    expect(instructions).toContain('IMPLEMENTATION');
+    expect(instructions).toContain('get_implementation_context');
+    expect(instructions).toContain('include_source');
 
-    expect(instructions).toContain('trace_call_chain');
-    expect(instructions).toContain('get_event_flow');
-    expect(instructions).toContain('get_data_models');
-    expect(instructions).toContain('get_function_context');
+    // Verify hybrid approach (MCP + traditional tools)
+    expect(instructions).toContain('traditional');
   });
 
   it('should register deep analysis tools when deps are provided', () => {
@@ -103,12 +90,12 @@ describe('createMcpServer', () => {
     // Server should work fine without optional deps
   });
 
-  it('should include get_env_variables in instructions', () => {
+  it('should include pattern validation guidance in instructions', () => {
     const server = createMcpServer(mockDeps);
     const instructions = (server as any)._instructions as string;
 
-    expect(instructions).toContain('get_env_variables');
-    expect(instructions).toContain('.env.example');
+    expect(instructions).toContain('validate_against_patterns');
+    expect(instructions).toContain('get_test_patterns');
   });
 
   it('should reference ~10K tokens in ORIENT step', () => {
