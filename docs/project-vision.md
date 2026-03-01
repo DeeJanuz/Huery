@@ -275,6 +275,7 @@ npx heury init
 | `npx heury hook install` | Install a post-commit git hook that runs incremental analysis automatically |
 | `npx heury hook remove` | Remove the heury post-commit git hook |
 | `npx heury serve` | Start MCP server in HTTP mode |
+| `npx heury ui` | Start local web UI viewer for browsing analysis data (default port 3939) |
 | `npx heury watch` | Watch mode for continuous analysis (future) |
 
 ---
@@ -287,8 +288,10 @@ npx heury init
 | Language | TypeScript (strict mode) |
 | Database | SQLite via better-sqlite3 |
 | MCP SDK | @modelcontextprotocol/sdk |
+| Web Server | Express 5 (for UI viewer) |
+| Frontend | React 19, React Flow, Vite 7 (dev dependency, built into dist) |
 | Testing | Vitest |
-| Build | tsup or similar bundler |
+| Build | tsup (server), Vite (UI client) |
 
 ---
 
@@ -336,7 +339,7 @@ The following are **not in scope** for heury. They belong to Ludflow or other pr
 
 - Multi-tenancy / organizations
 - User authentication
-- Web UI / frontend
+- Web UI as a cloud/hosted product (local read-only viewer is included via `heury ui`)
 - Document management
 - Diagram generation
 - Conversation / chat history

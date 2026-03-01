@@ -471,6 +471,75 @@ Pre-computed LLM summaries are redundant because the existing MCP tools already 
 
 ---
 
+### ADR-009: Local Web UI Viewer for Browsing Analysis Data
+**Date:** 2026-03-01
+**Status:** Accepted
+**Deciders:** Development Team
+
+#### Context
+While heury's primary interface is MCP tools for LLM consumption, developers also benefit from visually browsing their codebase analysis data. The project vision listed "Web UI / frontend" as an explicit non-goal, but this referred to a cloud-hosted or SaaS-style web application. A local, read-only viewer that runs alongside the CLI is a different proposition: it stays true to the local-first principle while providing human-readable exploration of analysis results.
+
+#### Decision
+Add a `heury ui` command that starts a local Express server serving a pre-built React SPA:
+
+1. **Backend**: Express 5 server (`src/adapters/ui/server.ts`) with 7 API route modules:
+   - `/api/stats` - Overview statistics
+   - `/api/code-units` - Code unit listing and detail
+   - `/api/search` - Full-text search across code units
+   - `/api/dependencies` - File dependency graph data
+   - `/api/clusters` - Feature area clusters and members
+   - `/api/function-calls` - Function call relationships
+   - `/api/event-flows` - Event emission/subscription data
+
+2. **Frontend**: React 19 SPA with 4 pages:
+   - Dashboard - Overview statistics and metrics
+   - Search - Search across code units with filtering
+   - Cluster Map - Interactive cluster mind-map (React Flow with dagre layout)
+   - Code Unit Detail - Full context for a code unit (calls, callers, type fields, events)
+
+3. **Build pipeline**: Vite builds the React client into `dist/` alongside the server bundle. The Express server serves the built client as static files with SPA fallback.
+
+4. **Dependencies**: Express 5 added as a production dependency. React, React Flow, Vite, and dagre added as dev dependencies (only needed at build time).
+
+#### Rationale
+**Why a local Express server rather than a static site generator:**
+- The viewer needs to query the SQLite database dynamically
+- API routes follow the same port/adapter pattern as MCP tools, reusing the same repository interfaces
+- Express is lightweight and already familiar in the Node.js ecosystem
+
+**Why React + React Flow:**
+- React Flow provides interactive graph visualization needed for the cluster mind-map
+- React is standard for SPAs with multiple views and state management
+- dagre provides automatic graph layout for cluster visualization
+
+**Why dev dependencies for frontend:**
+- React, Vite, and React Flow are only needed at build time
+- The built client is plain HTML/JS/CSS served by Express
+- Keeps the production dependency footprint minimal (only Express added)
+
+**Alternatives considered:**
+1. **Terminal-based TUI** - Cannot render interactive graphs or provide rich navigation
+2. **Electron app** - Too heavy for a supplementary viewer
+3. **Separate npm package** - Splits the project unnecessarily; the viewer is tightly coupled to the analysis data
+
+#### Consequences
+**Positive:**
+- Developers can visually explore their codebase analysis without using MCP tools
+- Cluster mind-map provides spatial understanding of feature areas
+- Reuses existing repository interfaces (no new data access patterns)
+- Default port 3939 avoids conflicts with common dev servers
+
+**Negative:**
+- Express added as a production dependency (~580KB)
+- Build pipeline now has two steps (tsup for server + Vite for client)
+- Frontend code adds maintenance surface area
+
+**Neutral:**
+- The viewer is read-only; no data modification capabilities
+- "Web UI / frontend" non-goal updated to clarify it refers to cloud/hosted products, not local viewers
+
+---
+
 ## Superseded Decisions
 
 <!-- Deprecated or superseded decisions are moved here -->
@@ -509,3 +578,4 @@ Pre-computed LLM summaries are redundant because the existing MCP tools already 
 | 2026-03-01 | ADR-008 | Initial: Remove vector search and LLM enrichment, replace with MCP-driven enrichment (get-unenriched-units, set-unit-summaries tools) | System |
 | 2026-03-01 | ADR-008 | Updated: Enrichment fully removed (UnitSummary model, repository, get-unit-summaries/get-unenriched-units/set-unit-summaries tools deleted); pre-computed summaries redundant with raw data exposed via MCP tools | System |
 | 2026-03-01 | ADR-005 | Updated: Removed stale enrichment/embedding references (superseded by ADR-008) | System |
+| 2026-03-01 | ADR-009 | Initial: Local web UI viewer with Express + React SPA, `heury ui` command | System |
