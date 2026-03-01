@@ -573,6 +573,16 @@ OPTIONS
 - findAll(): { template: RepositoryPatternTemplate; followers: RepositoryPatternTemplateFollower[] }[]
 - clear(): void
 
+### IFileAnalyzer
+**Purpose:** Port for analyzing a file and extracting code units, patterns, and dependencies. Used by MCP tools that need real-time file analysis (e.g., `validate_against_patterns` for validating new/modified files against established patterns).
+
+**Methods:**
+- analyze(filePath: string, content: string): FileProcessingResult | null
+
+**Location:** `src/domain/ports/file-analyzer.ts`
+
+---
+
 ### ILlmProvider
 **Purpose:** Port for BYOK LLM providers used by the enrichment pipeline to generate code unit summaries.
 

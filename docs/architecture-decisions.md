@@ -382,7 +382,7 @@ Add inline source support and implementation-phase tools:
 
 3. **3 new implementation-phase tools:**
    - `get_implementation_context`: Single-call bundle returning source, dependencies, patterns, test file locations, and feature area for a file or function. Source included by default.
-   - `validate_against_patterns`: Real-time validation of new/modified files against established pattern templates. Uses `fileAnalyzer` callback to analyze file content on-the-fly.
+   - `validate_against_patterns`: Real-time validation of new/modified files against established pattern templates. Uses `IFileAnalyzer` port interface to analyze file content on-the-fly.
    - `get_test_patterns`: Discovers test conventions from similar code units -- imports, setup patterns, naming, test file locations.
 
 4. **Revised MCP server instructions**: Two-phase workflow (planning vs implementation) with explicit guidance on when to use `include_source` and implementation-phase tools.
@@ -393,9 +393,9 @@ Add inline source support and implementation-phase tools:
 - The `include_source` opt-in pattern lets LLMs control the tradeoff between response size and round-trips
 - `get_implementation_context` defaults to including source since it is explicitly an implementation tool
 
-**Why a `fileAnalyzer` callback for `validate_against_patterns`:**
+**Why an `IFileAnalyzer` port for `validate_against_patterns`:**
 - The validation tool needs to analyze file content that may not yet be in the database (new/modified files)
-- Injecting a callback follows DIP -- the MCP tool does not depend on the analysis pipeline directly
+- The `IFileAnalyzer` interface (replacing the original bare callback) follows DIP consistently with all other port interfaces -- the MCP tool does not depend on the analysis pipeline directly
 - Enables real-time validation during implementation without requiring a full re-analysis
 
 **Alternatives considered:**
@@ -412,7 +412,7 @@ Add inline source support and implementation-phase tools:
 
 **Negative:**
 - `include_source: true` responses are larger; LLMs must use judgment on when to enable it
-- `validate_against_patterns` depends on `fileAnalyzer` callback, adding a new dependency to `McpServerDependencies`
+- `validate_against_patterns` depends on `IFileAnalyzer` port, adding a new dependency to `McpServerDependencies`
 - 3 more tools increase the MCP tool surface area (now 22 tools total)
 
 **Neutral:**
@@ -454,3 +454,4 @@ Add inline source support and implementation-phase tools:
 | 2026-02-28 | ADR-005 | Updated: Enriched embeddings (summaries, callers/callees, events, clusters in embedding text with priority ordering), vector-search post-filters (file_path_prefix, pattern_type, min_complexity, cluster_name) | System |
 | 2026-02-28 | ADR-006 | Initial: Git-diff-based incremental sync with post-commit hook | System |
 | 2026-03-01 | ADR-007 | Initial: Implementation-phase MCP tools and inline source support | System |
+| 2026-03-01 | ADR-007 | Updated: fileAnalyzer callback replaced with IFileAnalyzer port interface; MCP server refactored to auto-registration pattern via ToolRegistry; shared utilities extracted (test-file-discovery, similar-units, test-structure-parser, instructions) | System |

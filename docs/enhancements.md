@@ -1,8 +1,8 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-03-01
-**Total Active Issues:** 17
-**Resolved This Month:** 4
+**Total Active Issues:** 14
+**Resolved This Month:** 9
 
 ---
 
@@ -25,35 +25,15 @@
 - **Suggested Fix:** Extract each framework parser into its own module (e.g., `prisma-schema-parser.ts`) behind a shared `SchemaParser` interface with a `canHandle(content, filePath): boolean` method. The orchestrator loops over registered parsers, achieving OCP. Not urgent while only 4 frameworks exist, but the file is already large enough to warrant monitoring.
 - **Detected:** 2026-02-28, commit f749d47
 
-#### [MED-006] McpServerDependencies Growing to 15 Members with Procedural Tool Registration (SRP)
+#### [MED-006] McpServerDependencies Still Growing at 15 Members (SRP -- Partially Resolved)
 - **File:** `src/adapters/mcp/server.ts`
-- **Principle:** SRP, OCP
-- **Description:** The `McpServerDependencies` interface now has 15 members (14 repos/services + `fileAnalyzer`). The `createMcpServer` function uses a chain of `if (deps.x)` blocks to conditionally register tools, which is a mild type-switch on dependency availability. Adding a new tool requires modifying `createMcpServer` (OCP violation). At 277 lines and 22+ tool registrations, this file is approaching "god function" territory for wiring. The `fileAnalyzer` addition (a callback function rather than an interface) is inconsistent with the interface-based pattern used by all other dependencies.
-- **Suggested Fix:** (1) Consider a tool auto-registration pattern where each tool factory declares its own dependency requirements and `createMcpServer` iterates over registered factories. (2) Extract `McpServerDependencies` into sub-interfaces grouped by tool category (core, deep-analysis, implementation-phase). (3) Replace the `fileAnalyzer` callback with an `IFileAnalyzer` interface for consistency. Not urgent but trending toward needing attention.
+- **Principle:** SRP
+- **Description:** The procedural `if/push` tool registration and the bare `fileAnalyzer` callback were both resolved in commit e11fdfc (auto-registration pattern + `IFileAnalyzer` port interface). However, `McpServerDependencies` still has 15 members passed through a flat interface. Adding a new tool still requires adding a factory entry to the `toolFactories` array (mild OCP -- though now a single-line addition). The interface could benefit from sub-grouping (core vs deep-analysis vs implementation deps). At 235 lines and with the auto-registration pattern in place, this is now low-medium severity.
+- **Suggested Fix:** Extract `McpServerDependencies` into sub-interfaces grouped by tool category (core, deep-analysis, implementation-phase). Each tool factory already receives full deps, so narrowing could be done incrementally.
 - **Detected:** 2026-03-01, commit c5ea57c
+- **Updated:** 2026-03-01, commit e11fdfc (auto-registration and IFileAnalyzer resolved)
 
 ### Low Severity
-
-#### [LOW-017] Duplicated generateTestFileCandidates Logic Between get-implementation-context.ts and get-test-patterns.ts
-- **File:** `src/adapters/mcp/tools/get-implementation-context.ts`, `src/adapters/mcp/tools/get-test-patterns.ts`
-- **Principle:** DRY (supporting SRP)
-- **Description:** Both `get-implementation-context.ts` (lines 242-273) and `get-test-patterns.ts` (lines 217-269) contain independent `generateTestFileCandidates` functions with the same purpose -- generating test file path candidates from source file paths. The implementations differ in structure (the get-test-patterns version returns `TestFileCandidate` objects with `testedFilePath`, while get-implementation-context returns plain strings), but the core logic (src/ to tests/ mirroring, `__tests__` convention, co-located patterns) is duplicated. Any change to test file discovery conventions must be applied in both places.
-- **Suggested Fix:** Extract a shared `generateTestFileCandidates` utility into `src/adapters/mcp/test-file-discovery.ts`. The return type can include `testedFilePath` for consumers that need it. Both tools import from the shared module. Straightforward fix.
-- **Detected:** 2026-03-01, commit c5ea57c
-
-#### [LOW-016] get-test-patterns.ts at 387 Lines with Multiple Concerns (SRP Monitoring)
-- **File:** `src/adapters/mcp/tools/get-test-patterns.ts`
-- **Principle:** SRP
-- **Description:** This file handles four distinct responsibilities: (1) resolving target units, (2) finding similar units via scoring, (3) generating test file candidates and reading their content, and (4) extracting test structure patterns via regex parsing. At 387 lines it is the largest MCP tool file. The `extractTestStructure` and `summarizeSetupBody` functions perform regex-based source parsing that could be a separate utility. The similarity scoring logic in `findSimilarUnits` is also a distinct concern.
-- **Suggested Fix:** Consider extracting `findSimilarUnits` into a shared utility (other tools may want similar-unit discovery), and extracting `extractTestStructure`/`summarizeSetupBody` into a test-structure-parser module. Monitor for now since the file is still readable.
-- **Detected:** 2026-03-01, commit c5ea57c
-
-#### [LOW-015] get-implementation-context.ts at 300 Lines Composing 6 Data Sources (SRP Monitoring)
-- **File:** `src/adapters/mcp/tools/get-implementation-context.ts`
-- **Principle:** SRP
-- **Description:** This tool handler composes data from 6 sources: code units, dependencies, source extraction, pattern templates, test file discovery, and feature areas. While this bundling is the tool's explicit purpose (reducing multiple MCP calls to one), the handler function at 90+ lines orchestrates all 6 steps sequentially. If more data sources are added (e.g., guard clauses, event flows), this will grow further.
-- **Suggested Fix:** Each data-gathering step is already extracted into its own function, which is good. If the tool grows past ~350 lines or 8+ data sources, consider a step-based composition pattern. Monitor for now.
-- **Detected:** 2026-03-01, commit c5ea57c
 
 #### [LOW-014] Duplicated generateManifests Call Block in analyze.ts (Full vs Incremental)
 - **File:** `src/cli/commands/analyze.ts`
@@ -143,6 +123,18 @@
 
 ## Resolved Issues
 
+#### [LOW-017] Duplicated generateTestFileCandidates Logic Between get-implementation-context.ts and get-test-patterns.ts
+- **Resolved:** 2026-03-01, commit e11fdfc
+- **Resolution:** Extracted shared `generateTestFileCandidates` into `src/adapters/mcp/test-file-discovery.ts` with `TestFileCandidate` return type. Both tools now import from the shared module.
+
+#### [LOW-016] get-test-patterns.ts at 387 Lines with Multiple Concerns (SRP)
+- **Resolved:** 2026-03-01, commit e11fdfc
+- **Resolution:** Extracted `findSimilarUnits` into `src/adapters/mcp/similar-units.ts`, `extractTestStructure`/`summarizeSetupBody`/`determineConventions` into `src/adapters/mcp/test-structure-parser.ts`. File reduced from 387 to 157 lines.
+
+#### [LOW-015] get-implementation-context.ts at 300 Lines Composing 6 Data Sources (SRP)
+- **Resolved:** 2026-03-01, commit e11fdfc
+- **Resolution:** Extracted `generateTestFileCandidates` into shared module, reducing file from 300 to 268 lines. Each data-gathering step remains well-factored into its own function. Monitoring threshold no longer in concern range.
+
 #### [LOW-003] Duplicated Traversal Logic Between findBlockEnd and findBlockEndIndex
 - **Resolved:** 2026-02-28
 - **Resolution:** Extracted shared `findClosingBrace()` helper that returns both `charIndex` and `lineNumber`; `findBlockEnd` and `findBlockEndIndex` are now thin wrappers.
@@ -169,9 +161,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 17 |
+| Total Active | 14 |
 | Critical | 0 |
 | High | 0 |
 | Medium | 3 |
-| Low | 14 |
-| Resolved This Month | 4 |
+| Low | 11 |
+| Resolved This Month | 9 |
