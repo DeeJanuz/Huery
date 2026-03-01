@@ -2,36 +2,29 @@
 
 **Last Updated:** 2026-03-01
 **Total Active Issues:** 16
-**Resolved This Month:** 12
+**Resolved This Month:** 13
 
 ---
 
 ## Active Issues
 
-### High Severity
-
-#### [HIGH-001] UI Feature Has Zero Test Coverage (3300+ Lines Untested)
-- **File:** `src/adapters/ui/**`, `src/cli/commands/ui.ts`
-- **Principle:** Quality / TDD
-- **Description:** The entire UI viewer feature (30 new files, 3300+ lines) was committed with no test files. The backend route handlers are pure factory functions accepting dependency interfaces -- they are highly testable. The `useApi` hook, `parseRoute` function, and route response shaping logic all have clear, deterministic behavior that should be covered. Missing tests for: route handler responses and filtering logic, error handling paths (404, 500), query parameter validation, `useApi` hook state management, `parseRoute` hash parsing.
-- **Suggested Fix:** Add test files for each route factory (e.g., `routes/__tests__/stats.test.ts`) using mock repository implementations. Add unit tests for `parseRoute` and the `useApi` hook. Prioritize the backend routes as they contain the most logic.
-- **Detected:** 2026-03-01, commit 5ece8c4
-
 ### Medium Severity
 
-#### [MED-007] clusters.ts GET /clusters/:id Handler Is a God-Handler (SRP)
-- **File:** `src/adapters/ui/routes/clusters.ts`
-- **Principle:** SRP
-- **Description:** The `GET /clusters/:id` handler (lines 43-141) is 98 lines performing cluster lookup, code unit aggregation across all cluster files, dependency classification (internal vs external), deduplication via seen-set, and response shaping. This is application-layer logic embedded directly in a route handler. The handler has multiple reasons to change: if the cluster detail shape changes, if the dependency classification logic changes, or if the aggregation strategy changes.
-- **Suggested Fix:** Extract the cluster detail assembly into an application-layer service (e.g., `ClusterDetailAssembler.assemble(clusterId, deps)`) that the route handler calls. The route handler should only handle HTTP concerns (parse params, call service, send response).
+#### [MED-009] UI Frontend Has No Test Coverage (Downgraded from HIGH-001)
+- **File:** `src/adapters/ui/frontend/**`
+- **Principle:** Quality / TDD
+- **Description:** Backend route handlers now have 62 tests across 8 test files covering all 7 route factories, the `wrapHandler` utility, the `cluster-detail` module, and shared test helpers (commit 77e5c75). Remaining untested: the frontend `useApi` hook, `parseRoute` function, and React components. These are lower risk than the backend routes but still contain testable logic.
+- **Suggested Fix:** Add unit tests for `parseRoute` hash parsing and the `useApi` hook state management. React component tests are lower priority.
 - **Detected:** 2026-03-01, commit 5ece8c4
+- **Updated:** 2026-03-01, commit 77e5c75 (backend routes fully tested, downgraded from HIGH to MED)
 
-#### [MED-008] UI Routes Load All Entities Into Memory for Filtering (Scalability)
-- **File:** `src/adapters/ui/routes/code-units.ts`, `src/adapters/ui/routes/search.ts`, `src/adapters/ui/routes/stats.ts`
+#### [MED-008] UI Routes: search.ts and stats.ts Still Use findAll (Scalability -- Partially Resolved)
+- **File:** `src/adapters/ui/routes/search.ts`, `src/adapters/ui/routes/stats.ts`
 - **Principle:** SRP (repository should own querying)
-- **Description:** Multiple route handlers call `findAll()` and then apply in-memory filtering. `GET /code-units` applies 5 successive `.filter()` passes over all code units. `GET /search` loads all units then filters by name/file/pattern. `GET /stats` loads all units, dependencies, env vars, and clusters to compute counts. For large codebases, this loads potentially thousands of entities per request. The filtering responsibility belongs in the repository layer, not the route handler.
-- **Suggested Fix:** Add filtered query methods to the repository interfaces (e.g., `findByFilter(criteria)`, `count()`) and push filtering to the SQLite layer. This can be done incrementally -- start with the most-used endpoints.
+- **Description:** The `code-units.ts` route now uses targeted repo methods (`findByFilePath`, `findByType`, `findByLanguage`) for primary filters, falling back to `findAll` only when no filters are given (commit 77e5c75). However, `search.ts` still loads all units for substring filtering (acknowledged with a NOTE comment suggesting FTS5), and `stats.ts` still loads all entities to compute counts. These remain scalability concerns for large codebases.
+- **Suggested Fix:** For search: add SQLite FTS5 index or `LIKE` query behind a repo method. For stats: add `count()` methods to repository interfaces. Can be done incrementally.
 - **Detected:** 2026-03-01, commit 5ece8c4
+- **Updated:** 2026-03-01, commit 77e5c75 (code-units.ts now uses targeted queries)
 
 #### [MED-004] analyzeCommand Still Has Duplicated Manifest Generation (SRP -- Partially Resolved)
 - **File:** `src/cli/commands/analyze.ts`
@@ -128,13 +121,6 @@
 - **Suggested Fix:** Update ADR-008 to note that the MCP enrichment tools were subsequently removed. Remove `ILlmProvider` from ADR-005 line 266. Update the `rag-implementation-design.md` deprecation notice to reflect that enrichment was fully removed, not replaced.
 - **Detected:** 2026-03-01, commit 56dbd1a
 
-#### [LOW-019] Duplicated Error Handling Pattern Across 7 UI Route Files (DRY)
-- **File:** `src/adapters/ui/routes/*.ts`
-- **Principle:** DRY
-- **Description:** Every route handler across all 7 route files contains an identical `catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : String(error) }) }` block. This is a textbook case for Express error-handling middleware. Any change to error response format must be applied in 10+ locations.
-- **Suggested Fix:** Create a shared Express error-handling middleware and wrap route handlers with an `asyncHandler` utility, or use Express's built-in error middleware (`app.use((err, req, res, next) => ...)`). Trivial fix.
-- **Detected:** 2026-03-01, commit 5ece8c4
-
 #### [LOW-002] LanguageExtractor Interface Could Be Segregated
 - **File:** `src/extraction/language-registry.ts`
 - **Principle:** ISP
@@ -145,6 +131,18 @@
 ---
 
 ## Resolved Issues
+
+#### [HIGH-001] UI Feature Has Zero Test Coverage (3300+ Lines Untested)
+- **Resolved:** 2026-03-01, commit 77e5c75
+- **Resolution:** Added 62 tests across 8 test files covering all 7 backend route factories, `wrapHandler` utility, `cluster-detail` module, and shared test helpers. Remaining frontend coverage (useApi hook, parseRoute, React components) tracked as MED-009.
+
+#### [MED-007] clusters.ts GET /clusters/:id Handler Is a God-Handler (SRP)
+- **Resolved:** 2026-03-01, commit 77e5c75
+- **Resolution:** Extracted `collectClusterCodeUnits` and `classifyClusterDependencies` into `src/adapters/ui/cluster-detail.ts` with typed interfaces (`ClusterCodeUnit`, `ClassifiedDependencies`). The route handler now only handles HTTP concerns (parse params, call helpers, send response). Extracted module has 223-line dedicated test file.
+
+#### [LOW-019] Duplicated Error Handling Pattern Across 7 UI Route Files (DRY)
+- **Resolved:** 2026-03-01, commit 77e5c75
+- **Resolution:** Extracted `wrapHandler()` utility into `src/adapters/ui/route-handler.ts`. All 7 route files now wrap handlers with this utility, eliminating 10+ duplicated try/catch blocks. Utility has dedicated test coverage.
 
 #### [LOW-007] LLM Provider Factory Uses Switch on Provider Type
 - **Resolved:** 2026-03-01, commit ec964d0
@@ -194,7 +192,7 @@
 |--------|-------|
 | Total Active | 16 |
 | Critical | 0 |
-| High | 1 |
+| High | 0 |
 | Medium | 5 |
-| Low | 10 |
-| Resolved This Month | 12 |
+| Low | 11 |
+| Resolved This Month | 13 |
