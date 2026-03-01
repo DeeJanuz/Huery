@@ -13,9 +13,7 @@ import {
   createFunctionCall,
   createTypeField,
   createEventFlow,
-  createUnitSummary,
 } from '@/domain/models/index.js';
-import type { IUnitSummaryRepository } from '@/domain/ports/index.js';
 
 describe('get-function-context tool', () => {
   let codeUnitRepo: InMemoryCodeUnitRepository;
@@ -180,8 +178,6 @@ describe('get-function-context tool', () => {
     // Type fields empty for a function
     expect(parsed.data.typeFields).toHaveLength(0);
 
-    // No summary repo provided
-    expect(parsed.data.summary).toBeNull();
   });
 
   it('should return full context for a function by function_name', async () => {
@@ -223,42 +219,6 @@ describe('get-function-context tool', () => {
     expect(parsed.data.typeFields[0].name).toBe('orderId');
     expect(parsed.data.typeFields[0].fieldType).toBe('string');
     expect(parsed.data.typeFields[1].name).toBe('total');
-  });
-
-  it('should include summary when unitSummaryRepo is provided', async () => {
-    const summary = createUnitSummary({
-      codeUnitId: 'unit-a',
-      summary: 'Processes incoming orders and validates them.',
-      keyBehaviors: ['validates order', 'emits order-placed event'],
-      sideEffects: ['writes to database'],
-      providerModel: 'gpt-4',
-      generatedAt: '2024-01-01T00:00:00Z',
-    });
-
-    const fakeSummaryRepo: IUnitSummaryRepository = {
-      save: () => {},
-      saveBatch: () => {},
-      findByCodeUnitId: (id: string) => id === 'unit-a' ? summary : undefined,
-      findAll: () => [summary],
-      deleteByCodeUnitId: () => {},
-      clear: () => {},
-    };
-
-    const tool = createGetFunctionContextTool({
-      codeUnitRepo,
-      functionCallRepo,
-      typeFieldRepo,
-      eventFlowRepo,
-      unitSummaryRepo: fakeSummaryRepo,
-    });
-
-    const result = await tool.handler({ unit_id: 'unit-a' });
-    const parsed = JSON.parse(result.content[0].text);
-
-    expect(parsed.data.summary).toBeDefined();
-    expect(parsed.data.summary.summary).toBe('Processes incoming orders and validates them.');
-    expect(parsed.data.summary.keyBehaviors).toEqual(['validates order', 'emits order-placed event']);
-    expect(parsed.data.summary.sideEffects).toEqual(['writes to database']);
   });
 
   it('should return error when neither unit_id nor function_name provided', async () => {

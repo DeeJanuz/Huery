@@ -8,7 +8,6 @@ import type {
   IFunctionCallRepository,
   ITypeFieldRepository,
   IEventFlowRepository,
-  IUnitSummaryRepository,
   IFileSystem,
 } from '@/domain/ports/index.js';
 import type { CodeUnit } from '@/domain/models/index.js';
@@ -21,7 +20,6 @@ interface Dependencies {
   functionCallRepo: IFunctionCallRepository;
   typeFieldRepo: ITypeFieldRepository;
   eventFlowRepo: IEventFlowRepository;
-  unitSummaryRepo?: IUnitSummaryRepository;
   fileSystem?: IFileSystem;
 }
 
@@ -32,7 +30,7 @@ export function createGetFunctionContextTool(deps: Dependencies): {
   const definition: ToolDefinition = {
     name: 'get-function-context',
     description:
-      'Complete context for a function: signature, calls, callers, events, types, summary.',
+      'Complete context for a function: signature, calls, callers, events, types.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -151,21 +149,6 @@ export function createGetFunctionContextTool(deps: Dependencies): {
         lineNumber: field.lineNumber,
       }));
 
-    // Summary
-    const summary = deps.unitSummaryRepo
-      ? deps.unitSummaryRepo.findByCodeUnitId(unit!.id) ?? null
-      : null;
-
-    const summaryData = summary
-      ? {
-          summary: summary.summary,
-          keyBehaviors: summary.keyBehaviors,
-          sideEffects: summary.sideEffects,
-          providerModel: summary.providerModel,
-          generatedAt: summary.generatedAt,
-        }
-      : null;
-
     const unitData: Record<string, unknown> = {
       id: unit!.id,
       name: unit!.name,
@@ -230,7 +213,6 @@ export function createGetFunctionContextTool(deps: Dependencies): {
       incomingCalls: incomingCallsData,
       eventFlows,
       typeFields,
-      summary: summaryData,
     };
 
     return buildToolResponse(data);

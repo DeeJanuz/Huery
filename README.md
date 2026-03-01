@@ -14,7 +14,6 @@ LLM agents waste context reading files to understand a codebase. Heury pre-analy
 - Stores everything in a local SQLite database
 - Exposes 20+ MCP tools for agents to query the analysis
 - Generates token-budgeted manifest files for quick orientation
-
 ## Quick start
 
 ```sh
@@ -61,7 +60,6 @@ Copy the rules from [RULES.md](RULES.md) into your agent's rules file so it know
 | Behavior | `get-event-flow`, `trace-call-chain`, `get-function-context`, `get-function-guards` |
 | Patterns | `get-patterns-by-type`, `find-implementation-pattern`, `validate-against-patterns`, `get-test-patterns` |
 | Planning | `plan-change-impact`, `get-feature-area`, `get-implementation-context` |
-| Enrichment | `get-unit-summaries`, `get-unenriched-units`, `set-unit-summaries` |
 
 ## Keeping analysis fresh
 

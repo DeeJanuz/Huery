@@ -376,25 +376,6 @@ OPTIONS
 
 ---
 
-### UnitSummary
-**Purpose:** Stores summaries of code units, submitted by the MCP client agent via the `set-unit-summaries` tool.
-
-**Properties:**
-- id: string - Primary key
-- codeUnitId: string - Foreign key to CodeUnit (unique)
-- summary: string - Summary of what the function does
-- keyBehaviors: string[] - List of key behaviors
-- sideEffects: string[] - List of side effects
-- providerModel: string - Source of the summary (default: "mcp-client")
-- generatedAt: string - ISO timestamp of generation
-
-**Unique Constraint:** (codeUnitId)
-
-**Indexes:**
-- codeUnitId (for lookup by code unit)
-
----
-
 ### RepositoryGuardClause
 **Purpose:** Records guard clauses (early returns, null checks, auth checks, validation) detected within function bodies. Previously extracted but discarded; now persisted for MCP tool queries.
 
@@ -535,15 +516,6 @@ OPTIONS
 - deleteByFilePath(filePath: string): void
 - clear(): void
 
-### IUnitSummaryRepository
-**Methods:**
-- save(summary: UnitSummary): void
-- saveBatch(summaries: UnitSummary[]): void
-- findByCodeUnitId(codeUnitId: string): UnitSummary | undefined
-- findAll(): UnitSummary[]
-- deleteByCodeUnitId(codeUnitId: string): void
-- clear(): void
-
 ### IGuardClauseRepository
 **Methods:**
 - save(guard: RepositoryGuardClause): void
@@ -639,7 +611,6 @@ CodeUnit (1) ----< (many) FunctionCall (as caller, via callerUnitId)
 CodeUnit (0..1) ----< (many) FunctionCall (as callee, via calleeUnitId)
 CodeUnit (1) ----< (many) TypeField (via parentUnitId)
 CodeUnit (1) ----< (many) EventFlow (via codeUnitId)
-CodeUnit (1) ---- (0..1) UnitSummary (via codeUnitId, unique)
 CodeUnit (1) ----< (many) RepositoryGuardClause (via codeUnitId)
 SchemaModel (1) ----< (many) SchemaModelField (via modelId)
 

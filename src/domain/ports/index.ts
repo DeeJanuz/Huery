@@ -8,7 +8,6 @@ export type { IFunctionCallRepository } from './function-call-repository.js';
 export type { ITypeFieldRepository } from './type-field-repository.js';
 export type { IEventFlowRepository } from './event-flow-repository.js';
 export type { ISchemaModelRepository } from './schema-model-repository.js';
-export type { IUnitSummaryRepository } from './unit-summary-repository.js';
 export type { IGuardClauseRepository } from './guard-clause-repository.js';
 export type { IFileClusterRepository } from './file-cluster-repository.js';
 export type { IPatternTemplateRepository } from './pattern-template-repository.js';

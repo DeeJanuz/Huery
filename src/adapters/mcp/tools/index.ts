@@ -9,5 +9,3 @@ export { createTraceCallChainTool } from './trace-call-chain.js';
 export { createGetEventFlowTool } from './get-event-flow.js';
 export { createGetDataModelsTool } from './get-data-models.js';
 export { createGetFunctionContextTool } from './get-function-context.js';
-export { createSetUnitSummariesTool } from './set-unit-summaries.js';
-export { createGetUnenrichedUnitsTool } from './get-unenriched-units.js';

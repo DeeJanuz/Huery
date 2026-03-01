@@ -29,7 +29,6 @@ export async function serveCommand(
         typeFieldRepo: dependencies.typeFieldRepo,
         eventFlowRepo: dependencies.eventFlowRepo,
         schemaModelRepo: dependencies.schemaModelRepo,
-        unitSummaryRepo: dependencies.unitSummaryRepo,
         guardClauseRepo: dependencies.guardClauseRepo,
         fileClusterRepo: dependencies.fileClusterRepo,
         patternTemplateRepo: dependencies.patternTemplateRepo,

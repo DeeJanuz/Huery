@@ -17,7 +17,6 @@ import type {
   ITypeFieldRepository,
   IEventFlowRepository,
   ISchemaModelRepository,
-  IUnitSummaryRepository,
   IGuardClauseRepository,
   IFileClusterRepository,
   IPatternTemplateRepository,
@@ -38,7 +37,6 @@ import { createGetEventFlowTool } from './tools/get-event-flow.js';
 import { createGetDataModelsTool } from './tools/get-data-models.js';
 import { createGetFunctionContextTool } from './tools/get-function-context.js';
 import { createGetPatternsByTypeTool } from './tools/get-patterns-by-type.js';
-import { createGetUnitSummariesTool } from './tools/get-unit-summaries.js';
 import { createGetFunctionGuardsTool } from './tools/get-function-guards.js';
 import { createGetFeatureAreaTool } from './tools/get-feature-area.js';
 import { createFindImplementationPatternTool } from './tools/find-implementation-pattern.js';
@@ -46,8 +44,6 @@ import { createPlanChangeImpactTool } from './tools/plan-change-impact.js';
 import { createGetImplementationContextTool } from './tools/get-implementation-context.js';
 import { createValidateAgainstPatternsTool } from './tools/validate-against-patterns.js';
 import { createGetTestPatternsTool } from './tools/get-test-patterns.js';
-import { createSetUnitSummariesTool } from './tools/set-unit-summaries.js';
-import { createGetUnenrichedUnitsTool } from './tools/get-unenriched-units.js';
 import type { ToolDefinition, ToolHandler } from './tool-registry.js';
 
 export interface McpServerDependencies {
@@ -60,7 +56,6 @@ export interface McpServerDependencies {
   typeFieldRepo?: ITypeFieldRepository;
   eventFlowRepo?: IEventFlowRepository;
   schemaModelRepo?: ISchemaModelRepository;
-  unitSummaryRepo?: IUnitSummaryRepository;
   guardClauseRepo?: IGuardClauseRepository;
   fileClusterRepo?: IFileClusterRepository;
   patternTemplateRepo?: IPatternTemplateRepository;
@@ -125,26 +120,6 @@ const toolFactories: readonly ToolFactory[] = [
       ? createGetDataModelsTool({ schemaModelRepo: deps.schemaModelRepo })
       : null,
   (deps) =>
-    deps.unitSummaryRepo
-      ? createGetUnitSummariesTool({
-          unitSummaryRepo: deps.unitSummaryRepo,
-          codeUnitRepo: deps.codeUnitRepo,
-        })
-      : null,
-  (deps) =>
-    deps.unitSummaryRepo
-      ? createSetUnitSummariesTool({
-          unitSummaryRepo: deps.unitSummaryRepo,
-        })
-      : null,
-  (deps) =>
-    deps.unitSummaryRepo
-      ? createGetUnenrichedUnitsTool({
-          unitSummaryRepo: deps.unitSummaryRepo,
-          codeUnitRepo: deps.codeUnitRepo,
-        })
-      : null,
-  (deps) =>
     deps.guardClauseRepo
       ? createGetFunctionGuardsTool({
           guardClauseRepo: deps.guardClauseRepo,
@@ -182,7 +157,6 @@ const toolFactories: readonly ToolFactory[] = [
           functionCallRepo: deps.functionCallRepo,
           typeFieldRepo: deps.typeFieldRepo,
           eventFlowRepo: deps.eventFlowRepo,
-          unitSummaryRepo: deps.unitSummaryRepo,
           fileSystem: deps.fileSystem,
         })
       : null,

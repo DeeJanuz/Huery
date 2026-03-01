@@ -113,6 +113,8 @@ This creates a `.heury/` directory (add to `.gitignore`) containing:
 - `heury.db` — SQLite database with all extracted code intelligence
 - `MODULES.md`, `PATTERNS.md`, `DEPENDENCIES.md`, `HOTSPOTS.md`, `SCHEMA.md` — token-budgeted manifest files
 
+Analysis is pure heuristic extraction — no LLM or API keys required.
+
 ### Incremental analysis via git hook
 
 To keep analysis up to date on every commit:

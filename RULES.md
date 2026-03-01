@@ -62,11 +62,6 @@ You have access to heury MCP tools that provide pre-analyzed codebase intelligen
 - `get-feature-area` — Get all code related to a feature area (groups files, endpoints, models, and patterns).
 - `get-implementation-context` — Combined context for implementing a change: relevant code units, patterns, and conventions.
 
-### Enrichment
-- `get-unit-summaries` — LLM-generated natural language summaries of code units.
-- `get-unenriched-units` — Exported code units that don't yet have summaries. Use to discover what needs enrichment.
-- `set-unit-summaries` — Submit summaries for code units. The agent analyzes units and submits structured summaries.
-
 ## Workflow
 
 1. **Orient**: `get-module-overview` to understand the lay of the land
@@ -75,7 +70,6 @@ You have access to heury MCP tools that provide pre-analyzed codebase intelligen
 4. **Plan**: `plan-change-impact` before making changes
 5. **Conform**: `get-patterns-by-type`, `get-test-patterns` to match conventions
 6. **Implement**: Write code that follows the patterns you discovered
-7. **Enrich** (optional): After analysis, call `get-unenriched-units` to find code units without summaries, then call `set-unit-summaries` to submit structured summaries for them
 
 ## Notes
 
