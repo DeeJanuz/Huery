@@ -20,7 +20,7 @@
     "url": "https://github.com/djgrant/heury.git"
   },
   "homepage": "https://github.com/djgrant/heury",
-  "author": "Daniel Grant",
+  "author": "Deej <deej@ludflow.com>",
   "keywords": [
     "codebase-analysis",
     "mcp",
