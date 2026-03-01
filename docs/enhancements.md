@@ -1,7 +1,7 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-03-01
-**Total Active Issues:** 11
+**Total Active Issues:** 12
 **Resolved This Month:** 12
 
 ---
@@ -25,13 +25,13 @@
 - **Suggested Fix:** Extract each framework parser into its own module (e.g., `prisma-schema-parser.ts`) behind a shared `SchemaParser` interface with a `canHandle(content, filePath): boolean` method. The orchestrator loops over registered parsers, achieving OCP. Not urgent while only 4 frameworks exist, but the file is already large enough to warrant monitoring.
 - **Detected:** 2026-02-28, commit f749d47
 
-#### [MED-006] McpServerDependencies Still Growing at 15 Members (SRP -- Partially Resolved)
+#### [MED-006] McpServerDependencies Still Growing at 14 Members (SRP -- Partially Resolved)
 - **File:** `src/adapters/mcp/server.ts`
 - **Principle:** SRP
-- **Description:** The procedural `if/push` tool registration and the bare `fileAnalyzer` callback were both resolved in commit e11fdfc (auto-registration pattern + `IFileAnalyzer` port interface). However, `McpServerDependencies` still has 15 members passed through a flat interface. Adding a new tool still requires adding a factory entry to the `toolFactories` array (mild OCP -- though now a single-line addition). The interface could benefit from sub-grouping (core vs deep-analysis vs implementation deps). At 235 lines and with the auto-registration pattern in place, this is now low-medium severity.
+- **Description:** The procedural `if/push` tool registration and the bare `fileAnalyzer` callback were both resolved in commit e11fdfc (auto-registration pattern + `IFileAnalyzer` port interface). `McpServerDependencies` now has 14 members (down from 15 after `unitSummaryRepo` removal in commit 56dbd1a). Adding a new tool still requires adding a factory entry to the `toolFactories` array (mild OCP -- though now a single-line addition). The interface could benefit from sub-grouping (core vs deep-analysis vs implementation deps).
 - **Suggested Fix:** Extract `McpServerDependencies` into sub-interfaces grouped by tool category (core, deep-analysis, implementation-phase). Each tool factory already receives full deps, so narrowing could be done incrementally.
 - **Detected:** 2026-03-01, commit c5ea57c
-- **Updated:** 2026-03-01, commit e11fdfc (auto-registration and IFileAnalyzer resolved)
+- **Updated:** 2026-03-01, commit 56dbd1a (unitSummaryRepo removed, 15 -> 14 members)
 
 ### Low Severity
 
@@ -98,6 +98,13 @@
 - **Suggested Fix:** Rename to `ts-code-unit-extractor.ts` (or similar) to match actual scope. If the file grows past ~600 lines, consider extracting each construct extractor into its own module with a registry pattern so new types can be added without modifying `extractCodeUnits`. Monitor for now.
 - **Detected:** 2026-02-28, commit dae2249
 
+#### [LOW-018] Stale Enrichment References in Architecture Docs After Feature Removal
+- **File:** `docs/architecture-decisions.md`, `docs/rag-implementation-design.md`
+- **Principle:** Documentation accuracy
+- **Description:** After the enrichment feature was fully removed in commit 56dbd1a, several documentation files still reference the deleted tools and interfaces. `architecture-decisions.md` ADR-008 section (lines ~438-478) describes `get-unenriched-units`, `set-unit-summaries`, and `UnitSummary` as if they exist. ADR-005's summary (line 266) still lists `ILlmProvider` in the ports list. `rag-implementation-design.md` deprecation notice (line 3) references the deleted tools as replacements, and line 136 references `IUnitSummaryRepository`. These are historical docs but the stale references could confuse future readers.
+- **Suggested Fix:** Update ADR-008 to note that the MCP enrichment tools were subsequently removed. Remove `ILlmProvider` from ADR-005 line 266. Update the `rag-implementation-design.md` deprecation notice to reflect that enrichment was fully removed, not replaced.
+- **Detected:** 2026-03-01, commit 56dbd1a
+
 #### [LOW-002] LanguageExtractor Interface Could Be Segregated
 - **File:** `src/extraction/language-registry.ts`
 - **Principle:** ISP
@@ -111,11 +118,11 @@
 
 #### [LOW-007] LLM Provider Factory Uses Switch on Provider Type
 - **Resolved:** 2026-03-01, commit ec964d0
-- **Resolution:** Entire LLM provider subsystem removed. The factory, all three provider adapters (Anthropic, OpenAI, Gemini), and the `ILlmProvider` port interface were deleted. Enrichment is now handled via MCP tools, eliminating the need for built-in LLM providers.
+- **Resolution:** Entire LLM provider subsystem removed. The factory, all three provider adapters (Anthropic, OpenAI, Gemini), and the `ILlmProvider` port interface were deleted. Enrichment was subsequently removed entirely (ADR-008) as pre-computed summaries were redundant with raw data exposed via MCP tools.
 
 #### [LOW-004] analyzeCommand Accumulating Post-Analysis Responsibilities (Enrichment Path)
 - **Resolved:** 2026-03-01, commit ec964d0
-- **Resolution:** The enrichment execution path was removed from `analyzeCommand`. The `runEnrichment` function (which created a second `DatabaseManager` and had concrete `SqliteCodeUnitRepository` imports) was deleted entirely. Enrichment is now handled via MCP tools (`set-unit-summaries`, `get-unenriched-units`). Remaining full/incremental path duplication tracked in MED-004 and LOW-014.
+- **Resolution:** The enrichment execution path was removed from `analyzeCommand`. The `runEnrichment` function (which created a second `DatabaseManager` and had concrete `SqliteCodeUnitRepository` imports) was deleted entirely. The MCP enrichment tools (`set-unit-summaries`, `get-unenriched-units`) were subsequently removed in commit 56dbd1a as redundant. Remaining full/incremental path duplication tracked in MED-004 and LOW-014.
 
 #### [LOW-017] Duplicated generateTestFileCandidates Logic Between get-implementation-context.ts and get-test-patterns.ts
 - **Resolved:** 2026-03-01, commit e11fdfc
@@ -155,9 +162,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 11 |
+| Total Active | 12 |
 | Critical | 0 |
 | High | 0 |
 | Medium | 3 |
-| Low | 8 |
+| Low | 9 |
 | Resolved This Month | 12 |

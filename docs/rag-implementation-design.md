@@ -1,6 +1,6 @@
 # Vector Search Implementation Design for Heury
 
-> **DEPRECATED (2026-03-01):** Vector search and the embedding pipeline were removed in ADR-008. The placeholder hash-based embeddings provided no real semantic value, and the architecture was replaced with MCP-driven enrichment (see `get-unenriched-units` and `set-unit-summaries` tools). This document is retained for historical reference only.
+> **DEPRECATED (2026-03-01):** Vector search, the embedding pipeline, and all enrichment features were removed in ADR-008. The placeholder hash-based embeddings provided no real semantic value, and pre-computed LLM summaries were redundant with the raw analysis data already exposed via MCP tools. This document is retained for historical reference only.
 
 ## Overview
 This document outlines the design for implementing local vector search in Heury to enable:

@@ -263,11 +263,11 @@ Add a Deep Structural Analysis phase (Path C) as a post-processing step after th
 - **Pattern template detection:** Identifies recurring pattern type combinations across code units, selects canonical examples as templates, and tracks followers; exposed in PATTERNS.md manifests and via MCP tool
 - **Impact analysis:** BFS transitive dependency computation (`computeTransitiveDeps`) and Tarjan's SCC circular dependency detection (`detectCircularDeps`) in `src/application/graph-analysis/`
 - **9 new domain models:** FunctionCall, TypeField, EventFlow, SchemaModel/SchemaModelField, RepositoryGuardClause, RepositoryFileCluster/RepositoryFileClusterMember, RepositoryPatternTemplate/RepositoryPatternTemplateFollower
-- **8 new repository ports/adapters:** IFunctionCallRepository, ITypeFieldRepository, IEventFlowRepository, ISchemaModelRepository, IGuardClauseRepository, IFileClusterRepository, IPatternTemplateRepository, ILlmProvider
+- **7 new repository ports/adapters:** IFunctionCallRepository, ITypeFieldRepository, IEventFlowRepository, ISchemaModelRepository, IGuardClauseRepository, IFileClusterRepository, IPatternTemplateRepository (ILlmProvider removed in ADR-008)
 - **9 new MCP tools:** trace-call-chain, get-event-flow, get-data-models, get-function-context, get-patterns-by-type, get-function-guards, get-feature-area, find-implementation-pattern, plan-change-impact
 - **Enhanced manifests:** MODULES.md includes type fields and feature area clustering, PATTERNS.md includes event flows and convention sections from pattern templates, HOTSPOTS.md includes fan-out analysis, DEPENDENCIES.md includes circular dependency detection, new SCHEMA.md for data models
-- **Enriched embeddings:** Embedding text builder includes LLM summaries, callers/callees from call graph, events, and cluster membership with priority ordering for 128-token truncation; vector-search MCP tool supports post-filtering by file_path_prefix, pattern_type, min_complexity, cluster_name
-- **Optional BYOK LLM enrichment:** Anthropic, OpenAI, or Gemini for AI-generated function summaries
+- ~~**Enriched embeddings**~~ — Removed in ADR-008
+- ~~**Optional BYOK LLM enrichment**~~ — Removed in ADR-008
 
 #### Rationale
 **Why heuristic (regex) extractors, not AST:**
@@ -280,15 +280,10 @@ Add a Deep Structural Analysis phase (Path C) as a post-processing step after th
 - Can be run independently of the main pipeline
 - Does not slow down the core extraction for users who don't need deep analysis
 
-**Why BYOK for LLM enrichment:**
-- heury is a local-first tool; no built-in cloud dependency
-- Users bring their own API key if they want AI summaries
-- Supports multiple providers (Anthropic, OpenAI, Gemini) for flexibility
-
 **Alternatives considered:**
 1. **AST-based extraction** - Would provide exact call resolution but requires language-specific parsers, increasing dependencies significantly
 2. **Embedding deep structure in existing models** - Would bloat CodeUnit and violate SRP
-3. **Always-on LLM enrichment** - Would require a cloud dependency, violating local-first principle
+3. ~~**Always-on LLM enrichment**~~ - Removed in ADR-008; enrichment was redundant with raw data exposed via MCP tools
 
 #### Consequences
 **Positive:**
@@ -303,7 +298,7 @@ Add a Deep Structural Analysis phase (Path C) as a post-processing step after th
 - Call graph resolution is heuristic (name-based, not fully resolved)
 
 **Neutral:**
-- Enrichment is entirely optional (BYOK, off by default)
+- Enrichment removed in ADR-008 (was redundant with raw data exposed via MCP tools)
 - All new extractors follow the existing heuristic pattern
 - Token budget increased from 5K to 10K (configurable via `manifestTokenBudget`); new data fills previously underutilized manifests
 
@@ -421,7 +416,7 @@ Add inline source support and implementation-phase tools:
 
 ---
 
-### ADR-008: Remove Vector Search and LLM Enrichment, Replace with MCP-Driven Enrichment
+### ADR-008: Remove Vector Search and LLM Enrichment
 **Date:** 2026-03-01
 **Status:** Accepted (supersedes parts of ADR-005)
 **Deciders:** Architecture Team
@@ -431,16 +426,13 @@ Two features were providing limited value relative to their complexity:
 - **Vector search** used placeholder hash-based embeddings that produced no real semantic similarity. Upgrading to real embeddings (ONNX or API-based) would add native dependencies or require API keys, contradicting the zero-config local-first principle.
 - **LLM enrichment** required users to configure separate API keys (Anthropic, OpenAI, or Gemini) to generate function summaries. This was friction-heavy for a tool that is itself consumed via MCP by agents that ARE LLMs.
 
-Since heury is used via MCP by LLM agents, the calling agent can generate and submit summaries directly -- it already has LLM capabilities. This eliminates the need for both the embedding pipeline and the BYOK enrichment pipeline.
+Pre-computed LLM summaries are redundant because the existing MCP tools already expose signatures, source code, patterns, and call chains on demand. The calling LLM agent can synthesize understanding from these raw signals without needing pre-generated summaries stored in the database.
 
 #### Decision
 1. **Remove vector search entirely**: Delete `IVectorSearchService`, `IEmbeddingProvider`, `InMemoryVectorSearch`, `LocalEmbeddingProvider`, `OpenAIEmbeddingProvider`, `EmbeddingPipeline`, `EmbeddingTextContext`, embedding text builder, and the `vector-search` MCP tool.
 2. **Remove LLM enrichment pipeline**: Delete `ILlmProvider`, `AnthropicProvider`, `OpenAIProvider`, `GeminiProvider`, `LlmProviderFactory`, `EnrichmentProcessor`, and the `--enrich` CLI flag.
 3. **Remove config sections**: Remove `embedding` and `enrichment` blocks from `HeuryConfig`.
-4. **Add MCP-driven enrichment tools**:
-   - `get-unenriched-units`: Returns exported code units that lack summaries, so the calling agent can discover what needs enrichment.
-   - `set-unit-summaries`: Accepts batch summaries from the calling agent with `providerModel` set to `'mcp-client'`.
-5. **Retain `UnitSummary` model and `IUnitSummaryRepository`**: Summaries are still stored and queryable via `get-unit-summaries`. The data model is unchanged except `providerModel` defaults to `'mcp-client'`.
+4. **Remove MCP enrichment tools and summary storage**: Delete `get-unenriched-units`, `set-unit-summaries`, `get-unit-summaries` MCP tools, the `UnitSummary` domain model, and `IUnitSummaryRepository` port. Summaries add no value when the MCP client already has access to all raw analysis data.
 
 #### Rationale
 **Why remove vector search:**
@@ -449,34 +441,33 @@ Since heury is used via MCP by LLM agents, the calling agent can generate and su
 - Full-text `search-codebase` already provides keyword-based code discovery
 - LLM agents can reason about search results without vector similarity scores
 
-**Why MCP-driven enrichment instead of BYOK:**
-- The MCP client IS an LLM -- it can analyze code and generate summaries directly
-- Eliminates API key configuration entirely
-- Simpler architecture: two MCP tools replace an entire enrichment pipeline (3 LLM providers, factory, processor)
-- The agent controls enrichment timing and quality
+**Why remove enrichment entirely (not replace with MCP-driven approach):**
+- Existing MCP tools already expose signatures, source, patterns, and call chains on demand
+- The calling LLM agent can synthesize understanding from raw data without pre-computed summaries
+- Eliminates hundreds of LLM calls per analysis that produced redundant information
+- Simpler tool surface: fewer tools to discover and invoke
+- Zero API key configuration needed for any feature
 
 **Alternatives considered:**
 1. **Keep vector search with real embeddings** -- Adds native deps or API key requirement, contradicts zero-config goal
 2. **Keep BYOK enrichment** -- Unnecessary complexity when the MCP client is itself an LLM
-3. **Remove enrichment entirely** -- Summaries are valuable; the MCP-driven approach preserves them without the infrastructure
+3. **MCP-driven enrichment (agent submits summaries)** -- Tried and removed; summaries were redundant with raw data already exposed via MCP tools
 
 #### Consequences
 **Positive:**
-- Simpler architecture: ~3,400 lines of code removed (net -2,855 lines)
+- Simpler architecture: ~4,800 lines removed (including enrichment tools, model, repository, and all tests)
 - Zero API key configuration needed for any feature
-- No native dependencies removed (better-sqlite3 remains the only one)
+- Cleaner tool surface with no enrichment workflow to manage
 - Config schema simplified (only core fields remain)
-- MCP tool count stays manageable (vector-search removed, 2 enrichment tools added)
+- Analysis is pure heuristic extraction with no LLM dependency
 
 **Negative:**
 - No semantic search capability (keyword search only)
-- Enrichment requires the agent to actively call `get-unenriched-units` + `set-unit-summaries`
-- No batch enrichment without an MCP client connected
+- No pre-computed summaries (agents synthesize understanding on demand from raw analysis data)
 
 **Neutral:**
-- `UnitSummary` model unchanged; existing summaries remain valid
-- `get-unit-summaries` MCP tool unchanged
 - Future semantic search could be re-added via a simpler approach if needed
+- `get-function-context` still provides comprehensive function understanding in a single tool call
 
 ---
 
@@ -516,3 +507,5 @@ Since heury is used via MCP by LLM agents, the calling agent can generate and su
 | 2026-03-01 | ADR-007 | Updated: fileAnalyzer callback replaced with IFileAnalyzer port interface; MCP server refactored to auto-registration pattern via ToolRegistry; shared utilities extracted (test-file-discovery, similar-units, test-structure-parser, instructions) | System |
 | 2026-03-01 | ADR-007 | Updated: MCP instructions slimmed to workflow guidance only (~130 words, 73% reduction); per-tool reference removed as redundant with tool schema descriptions | System |
 | 2026-03-01 | ADR-008 | Initial: Remove vector search and LLM enrichment, replace with MCP-driven enrichment (get-unenriched-units, set-unit-summaries tools) | System |
+| 2026-03-01 | ADR-008 | Updated: Enrichment fully removed (UnitSummary model, repository, get-unit-summaries/get-unenriched-units/set-unit-summaries tools deleted); pre-computed summaries redundant with raw data exposed via MCP tools | System |
+| 2026-03-01 | ADR-005 | Updated: Removed stale enrichment/embedding references (superseded by ADR-008) | System |

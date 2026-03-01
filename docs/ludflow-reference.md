@@ -197,7 +197,7 @@ Vector search complements keyword search by finding semantically similar code:
 7. **Port/adapter pattern** - Abstract storage, embedding providers, and search backends -- PORTED
 8. **Module-level pattern detection** - Catch patterns in file-scope code outside functions -- PORTED
 9. **Deep structural analysis** - Call graphs, type fields, event flows, schema models, guards -- PORTED (Path C)
-10. **LLM enrichment** - AI-generated function summaries -- PORTED (BYOK via Anthropic/OpenAI/Gemini)
+10. **LLM enrichment** - AI-generated function summaries -- REMOVED (ADR-008: redundant with raw data exposed via MCP tools; calling LLM agents synthesize understanding on demand)
 
 ---
 
@@ -206,7 +206,7 @@ Vector search complements keyword search by finding semantically similar code:
 | Ludflow | Heury |
 |---------|-------|
 | PostgreSQL + Prisma ORM | SQLite (embedded, no server) |
-| pgvector for embeddings | In-memory cosine similarity (upgradeable to hnswlib or sqlite-vss) |
+| pgvector for embeddings | Removed (ADR-008); keyword search via `search-codebase` |
 | Multi-tenant (organization scoping) | Single-user, local-first |
 | Vercel serverless deployment | CLI tool, runs locally |
 | Inngest for background jobs | Direct execution (no job queue needed) |
