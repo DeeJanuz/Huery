@@ -159,7 +159,7 @@ export function createPlanChangeImpactTool(deps: Dependencies): {
 
     // 11. Source enrichment
     const targetData: Record<string, unknown> = { ...target };
-    let affectedEndpoints: Record<string, unknown>[] = affectedEndpointsRaw;
+    let affectedEndpoints: Record<string, unknown>[] = affectedEndpointsRaw as unknown as Record<string, unknown>[];
 
     if (includeSource && deps.fileSystem) {
       // Source for the target unit

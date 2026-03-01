@@ -15,6 +15,19 @@
     "test:coverage": "vitest run --coverage",
     "lint": "tsc --noEmit"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/djgrant/heury.git"
+  },
+  "homepage": "https://github.com/djgrant/heury",
+  "author": "Daniel Grant",
+  "keywords": [
+    "codebase-analysis",
+    "mcp",
+    "llm",
+    "code-intelligence",
+    "static-analysis"
+  ],
   "license": "Elastic-2.0",
   "engines": {
     "node": ">=20.0.0"
