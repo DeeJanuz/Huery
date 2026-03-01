@@ -15,3 +15,4 @@ export type { ILlmProvider, LlmProviderConfig } from './llm-provider.js';
 export type { IGuardClauseRepository } from './guard-clause-repository.js';
 export type { IFileClusterRepository } from './file-cluster-repository.js';
 export type { IPatternTemplateRepository } from './pattern-template-repository.js';
+export type { IFileAnalyzer } from './file-analyzer.js';

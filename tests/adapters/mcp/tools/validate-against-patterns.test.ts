@@ -13,35 +13,39 @@ import {
   createPatternTemplate,
   createPatternTemplateFollower,
 } from '@/domain/models/index.js';
-import type { FileProcessingResult } from '@/application/file-processor.js';
+import type { IFileAnalyzer } from '@/domain/ports/index.js';
 
-const mockFileAnalyzer = (filePath: string, _content: string): FileProcessingResult | null => {
-  return {
-    filePath,
-    codeUnits: [createCodeUnit({
-      id: 'extracted-1',
+const mockFileAnalyzer: IFileAnalyzer = {
+  analyze(filePath: string, _content: string) {
+    return {
       filePath,
-      name: 'extractedFunction',
-      unitType: CodeUnitType.FUNCTION,
-      lineStart: 1,
-      lineEnd: 10,
-      isAsync: false,
-      isExported: true,
-      language: 'typescript',
-      patterns: [createCodeUnitPattern({
-        codeUnitId: 'extracted-1',
-        patternType: PatternType.API_ENDPOINT,
-        patternValue: 'GET /api/test',
+      codeUnits: [createCodeUnit({
+        id: 'extracted-1',
+        filePath,
+        name: 'extractedFunction',
+        unitType: CodeUnitType.FUNCTION,
+        lineStart: 1,
+        lineEnd: 10,
+        isAsync: false,
+        isExported: true,
+        language: 'typescript',
+        patterns: [createCodeUnitPattern({
+          codeUnitId: 'extracted-1',
+          patternType: PatternType.API_ENDPOINT,
+          patternValue: 'GET /api/test',
+        })],
       })],
-    })],
-    dependencies: [],
-    moduleLevelPatterns: [],
-    bodiesByUnitId: new Map(),
-  };
+      dependencies: [],
+      moduleLevelPatterns: [],
+      bodiesByUnitId: new Map(),
+    };
+  },
 };
 
-const nullFileAnalyzer = (_filePath: string, _content: string): FileProcessingResult | null => {
-  return null;
+const nullFileAnalyzer: IFileAnalyzer = {
+  analyze(_filePath: string, _content: string) {
+    return null;
+  },
 };
 
 describe('validate-against-patterns tool', () => {

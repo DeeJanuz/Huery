@@ -4,8 +4,7 @@
  * Reads the file, runs extractors on it, and compares against pattern templates.
  */
 
-import type { IFileSystem, IPatternTemplateRepository, ICodeUnitRepository } from '@/domain/ports/index.js';
-import type { FileProcessingResult } from '@/application/file-processor.js';
+import type { IFileSystem, IPatternTemplateRepository, ICodeUnitRepository, IFileAnalyzer } from '@/domain/ports/index.js';
 import { buildToolResponse, buildErrorResponse } from '../response-builder.js';
 import type { ToolDefinition, ToolHandler } from '../tool-registry.js';
 
@@ -13,7 +12,7 @@ interface Dependencies {
   fileSystem: IFileSystem;
   patternTemplateRepo: IPatternTemplateRepository;
   codeUnitRepo: ICodeUnitRepository;
-  fileAnalyzer?: (filePath: string, content: string) => FileProcessingResult | null;
+  fileAnalyzer?: IFileAnalyzer;
 }
 
 interface ExtractedUnitInfo {
@@ -94,7 +93,7 @@ export function createValidateAgainstPatternsTool(deps: Dependencies): {
     }
 
     // 3. Run fileAnalyzer
-    const processingResult = deps.fileAnalyzer(filePath, content);
+    const processingResult = deps.fileAnalyzer.analyze(filePath, content);
 
     if (!processingResult || processingResult.codeUnits.length === 0) {
       return buildToolResponse({

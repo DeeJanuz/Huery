@@ -16,6 +16,7 @@ import type { CodeUnit } from '@/domain/models/index.js';
 import { extractSourceForUnits } from '../source-extractor.js';
 import { buildToolResponse, buildErrorResponse } from '../response-builder.js';
 import type { ToolDefinition, ToolHandler } from '../tool-registry.js';
+import { generateTestFileCandidates } from '../test-file-discovery.js';
 
 interface Dependencies {
   codeUnitRepo: ICodeUnitRepository;
@@ -229,47 +230,14 @@ async function discoverTestFiles(
   for (const fp of filePaths) {
     const candidates = generateTestFileCandidates(fp);
     for (const candidate of candidates) {
-      if (seen.has(candidate)) continue;
-      seen.add(candidate);
-      const exists = await fileSystem.exists(candidate);
-      results.push({ path: candidate, exists });
+      if (seen.has(candidate.testFilePath)) continue;
+      seen.add(candidate.testFilePath);
+      const exists = await fileSystem.exists(candidate.testFilePath);
+      results.push({ path: candidate.testFilePath, exists });
     }
   }
 
   return results;
-}
-
-function generateTestFileCandidates(filePath: string): string[] {
-  // src/foo/bar.ts -> extract dir (src/foo) and basename (bar) and extension (.ts)
-  const lastSlash = filePath.lastIndexOf('/');
-  const dir = lastSlash >= 0 ? filePath.slice(0, lastSlash) : '';
-  const fileName = lastSlash >= 0 ? filePath.slice(lastSlash + 1) : filePath;
-  const dotIdx = fileName.lastIndexOf('.');
-  const baseName = dotIdx >= 0 ? fileName.slice(0, dotIdx) : fileName;
-  const ext = dotIdx >= 0 ? fileName.slice(dotIdx) : '';
-
-  // Determine the relative path inside src/ for the tests/ mirror
-  const srcPrefix = 'src/';
-  const insideSrc = filePath.startsWith(srcPrefix);
-
-  const candidates: string[] = [];
-
-  if (insideSrc) {
-    const relDir = dir.slice(srcPrefix.length);
-    const testsDir = relDir ? `tests/${relDir}` : 'tests';
-
-    // Convention 1: tests/foo/bar.test.ts
-    candidates.push(`${testsDir}/${baseName}.test${ext}`);
-    // Convention 2: tests/foo/bar.spec.ts
-    candidates.push(`${testsDir}/${baseName}.spec${ext}`);
-  }
-
-  // Convention 3: src/foo/__tests__/bar.test.ts
-  candidates.push(`${dir}/__tests__/${baseName}.test${ext}`);
-  // Convention 4: src/foo/bar.test.ts (co-located)
-  candidates.push(`${dir}/${baseName}.test${ext}`);
-
-  return candidates;
 }
 
 function findFeatureArea(

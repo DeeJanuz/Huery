@@ -65,8 +65,7 @@ describe('createMcpServer', () => {
     // Verify key workflow steps are mentioned
     expect(instructions).toContain('ORIENT');
     expect(instructions).toContain('TARGET');
-    expect(instructions).toContain('READ');
-    expect(instructions).toContain('VERIFY');
+    expect(instructions).toContain('DEEP READ');
 
     // Verify key tools are mentioned
     expect(instructions).toContain('get_analysis_stats');
@@ -116,6 +115,6 @@ describe('createMcpServer', () => {
     const server = createMcpServer(mockDeps);
     const instructions = (server as any)._instructions as string;
 
-    expect(instructions).toContain('~10K tokens total');
+    expect(instructions).toContain('~10K tokens');
   });
 });
