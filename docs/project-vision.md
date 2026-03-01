@@ -99,9 +99,9 @@ Both transports supported:
 - **stdio (default)**: Zero configuration. Works with any MCP client that supports stdio.
 - **HTTP (optional)**: For clients or workflows that need HTTP transport. Configurable port.
 
-The server includes built-in `instructions` that guide LLM clients through a two-phase hybrid workflow:
-- **Planning phase**: ORIENT with manifests, TARGET with search tools, DEEP READ source files, use `get_dependencies` and `plan_change_impact` for blast radius
-- **Implementation phase**: Use `get_implementation_context` for single-call bundles, pass `include_source: true` to tools to get inline source and avoid follow-up file reads, use `get_test_patterns` for test conventions, use `validate_against_patterns` for real-time pattern checking
+The server includes compact built-in `instructions` (~130 words) that guide LLM clients through a two-phase hybrid workflow. Per-tool details are provided by each tool's own schema description; the instructions focus on behavioral nudges:
+- **Planning phase**: Read manifests first, use search/filter tools for contracts, use traditional file tools for deep context
+- **Implementation phase**: Start with `get_implementation_context`, pass `include_source: true` to get source inline, use `get_test_patterns` and `validate_against_patterns` for consistency
 
 MCP clients that support server instructions will receive this guidance automatically.
 

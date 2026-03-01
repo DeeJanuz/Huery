@@ -385,7 +385,7 @@ Add inline source support and implementation-phase tools:
    - `validate_against_patterns`: Real-time validation of new/modified files against established pattern templates. Uses `IFileAnalyzer` port interface to analyze file content on-the-fly.
    - `get_test_patterns`: Discovers test conventions from similar code units -- imports, setup patterns, naming, test file locations.
 
-4. **Revised MCP server instructions**: Two-phase workflow (planning vs implementation) with explicit guidance on when to use `include_source` and implementation-phase tools.
+4. **Revised MCP server instructions**: Compact workflow guidance only (~130 words). Per-tool reference removed since each tool's own schema description already provides that information. Instructions focus on behavioral nudges: hybrid approach (MCP + traditional tools), planning vs implementation phases, manifest-first orientation, and `include_source` principle.
 
 #### Rationale
 **Why inline source rather than always returning source:**
@@ -455,3 +455,4 @@ Add inline source support and implementation-phase tools:
 | 2026-02-28 | ADR-006 | Initial: Git-diff-based incremental sync with post-commit hook | System |
 | 2026-03-01 | ADR-007 | Initial: Implementation-phase MCP tools and inline source support | System |
 | 2026-03-01 | ADR-007 | Updated: fileAnalyzer callback replaced with IFileAnalyzer port interface; MCP server refactored to auto-registration pattern via ToolRegistry; shared utilities extracted (test-file-discovery, similar-units, test-structure-parser, instructions) | System |
+| 2026-03-01 | ADR-007 | Updated: MCP instructions slimmed to workflow guidance only (~130 words, 73% reduction); per-tool reference removed as redundant with tool schema descriptions | System |
