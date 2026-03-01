@@ -151,27 +151,36 @@ export const CodeUnitPage: React.FC<CodeUnitPageProps> = ({ id, onNavigate }) =>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-        {callers.length > 0 && (
-          <ReferenceList
-            title="Callers"
-            items={callers}
-            onNavigate={onNavigate}
-            getUnitId={(item) => item.callerUnitId}
-            getName={(item) => item.callerName}
-            getFilePath={(item) => item.callerFilePath}
-          />
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {callers.length > 0 && (
+            <ReferenceList
+              title="Callers"
+              items={callers}
+              onNavigate={onNavigate}
+              getUnitId={(item) => item.callerUnitId}
+              getName={(item) => item.callerName}
+              getFilePath={(item) => item.callerFilePath}
+            />
+          )}
 
-        {callees.length > 0 && (
-          <ReferenceList
-            title="Callees"
-            items={callees}
-            onNavigate={onNavigate}
-            getUnitId={(item) => item.calleeUnitId}
-            getName={(item) => item.calleeName}
-            getFilePath={(item) => item.calleeFilePath}
-          />
-        )}
+          {callees.length > 0 && (
+            <ReferenceList
+              title="Callees"
+              items={callees}
+              onNavigate={onNavigate}
+              getUnitId={(item) => item.calleeUnitId}
+              getName={(item) => item.calleeName}
+              getFilePath={(item) => item.calleeFilePath}
+            />
+          )}
+        </div>
+
+        <SourceCodePanel
+          extractedCode={unit.extractedCode}
+          filePath={unit.filePath}
+          lineStart={unit.lineStart}
+          lineEnd={unit.lineEnd}
+        />
       </div>
 
       {unit.typeFields && unit.typeFields.length > 0 && (
@@ -300,6 +309,67 @@ const ReferenceList: React.FC<ReferenceListProps> = ({ title, items, onNavigate,
         );
       })}
     </div>
+  </div>
+);
+
+interface SourceCodePanelProps {
+  extractedCode: string | null;
+  filePath: string;
+  lineStart: number;
+  lineEnd: number;
+}
+
+const SourceCodePanel: React.FC<SourceCodePanelProps> = ({ extractedCode, filePath, lineStart, lineEnd }) => (
+  <div
+    style={{
+      backgroundColor: '#fff',
+      borderRadius: '8px',
+      padding: '24px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+    }}
+  >
+    <h3 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 600, color: '#1a1a2e' }}>
+      Source Code
+    </h3>
+    <div style={{ fontSize: '11px', color: '#999', fontFamily: 'var(--font-mono)', marginBottom: '12px' }}>
+      {filePath} : {lineStart}-{lineEnd}
+    </div>
+    {extractedCode !== null ? (
+      <div
+        style={{
+          backgroundColor: '#1e1e2e',
+          borderRadius: '6px',
+          padding: '16px',
+          overflow: 'auto',
+          maxHeight: '600px',
+        }}
+      >
+        <pre style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: '13px', lineHeight: '1.6' }}>
+          {extractedCode.split('\n').map((line, i) => (
+            <div key={i} style={{ display: 'flex' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '48px',
+                  flexShrink: 0,
+                  textAlign: 'right',
+                  paddingRight: '16px',
+                  color: '#6c7086',
+                  userSelect: 'none',
+                }}
+              >
+                {lineStart + i}
+              </span>
+              <span style={{ color: '#cdd6f4', whiteSpace: 'pre' }}>{line}</span>
+            </div>
+          ))}
+        </pre>
+      </div>
+    ) : (
+      <div style={{ color: '#999', fontSize: '13px', fontStyle: 'italic' }}>
+        Source not available
+      </div>
+    )}
   </div>
 );
 

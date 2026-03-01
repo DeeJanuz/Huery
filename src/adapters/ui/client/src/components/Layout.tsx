@@ -120,7 +120,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentRoute, onNaviga
           overflow: 'auto',
         }}
       >
-        <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
           {children}
         </div>
       </main>

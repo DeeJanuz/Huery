@@ -63,6 +63,7 @@ export interface CodeUnitDetail extends CodeUnit {
     readonly callees: FunctionCallRef[];
   };
   readonly typeFields: TypeField[];
+  readonly extractedCode: string | null;
 }
 
 export interface SearchResult {

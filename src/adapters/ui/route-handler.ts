@@ -6,12 +6,17 @@
 
 import type { Request, Response } from 'express';
 
-type RouteHandler = (req: Request, res: Response) => void;
+type RouteHandler = (req: Request, res: Response) => void | Promise<void>;
 
-export function wrapHandler(handler: RouteHandler): RouteHandler {
+export function wrapHandler(handler: RouteHandler): (req: Request, res: Response) => void {
   return (req: Request, res: Response) => {
     try {
-      handler(req, res);
+      const result = handler(req, res);
+      if (result instanceof Promise) {
+        result.catch((error: unknown) => {
+          res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+        });
+      }
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
     }

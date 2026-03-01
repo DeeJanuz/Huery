@@ -34,6 +34,7 @@ export async function uiCommand(
       codeUnitRepo: dependencies.codeUnitRepo,
       dependencyRepo: dependencies.dependencyRepo,
       envVarRepo: dependencies.envVarRepo,
+      fileSystem: fs,
       functionCallRepo: dependencies.functionCallRepo,
       typeFieldRepo: dependencies.typeFieldRepo,
       eventFlowRepo: dependencies.eventFlowRepo,

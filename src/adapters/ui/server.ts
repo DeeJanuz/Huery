@@ -10,6 +10,7 @@ import type {
   ICodeUnitRepository,
   IFileDependencyRepository,
   IEnvVariableRepository,
+  IFileSystem,
   IFunctionCallRepository,
   ITypeFieldRepository,
   IEventFlowRepository,
@@ -27,6 +28,7 @@ export interface UiServerDependencies {
   codeUnitRepo: ICodeUnitRepository;
   dependencyRepo: IFileDependencyRepository;
   envVarRepo: IEnvVariableRepository;
+  fileSystem: IFileSystem;
   functionCallRepo: IFunctionCallRepository;
   typeFieldRepo: ITypeFieldRepository;
   eventFlowRepo: IEventFlowRepository;

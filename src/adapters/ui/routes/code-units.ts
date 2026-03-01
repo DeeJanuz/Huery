@@ -6,16 +6,19 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import type {
   ICodeUnitRepository,
+  IFileSystem,
   IFunctionCallRepository,
   ITypeFieldRepository,
 } from '@/domain/ports/index.js';
 import type { CodeUnit, CodeUnitType } from '@/domain/models/index.js';
+import { extractSourceForUnit } from '@/adapters/mcp/source-extractor.js';
 import { wrapHandler } from '../route-handler.js';
 
 interface CodeUnitsDependencies {
   codeUnitRepo: ICodeUnitRepository;
   functionCallRepo: IFunctionCallRepository;
   typeFieldRepo: ITypeFieldRepository;
+  fileSystem: IFileSystem;
 }
 
 export function createCodeUnitsRoutes(deps: CodeUnitsDependencies): ReturnType<typeof Router> {
@@ -72,7 +75,7 @@ export function createCodeUnitsRoutes(deps: CodeUnitsDependencies): ReturnType<t
     res.json({ total, items: units });
   }));
 
-  router.get('/code-units/:id', wrapHandler((req: Request, res: Response) => {
+  router.get('/code-units/:id', wrapHandler(async (req: Request, res: Response) => {
     const id = String(req.params.id);
     const unit = deps.codeUnitRepo.findById(id);
     if (!unit) {
@@ -83,11 +86,17 @@ export function createCodeUnitsRoutes(deps: CodeUnitsDependencies): ReturnType<t
     const callers = deps.functionCallRepo.findByCalleeUnitId(unit.id);
     const callees = deps.functionCallRepo.findByCallerUnitId(unit.id);
     const typeFields = deps.typeFieldRepo.findByParentUnitId(unit.id);
+    const extractedCode = await extractSourceForUnit(deps.fileSystem, {
+      filePath: unit.filePath,
+      lineStart: unit.lineStart,
+      lineEnd: unit.lineEnd,
+    });
 
     res.json({
       ...unit,
       functionCalls: { callers, callees },
       typeFields,
+      extractedCode,
     });
   }));
 

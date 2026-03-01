@@ -78,19 +78,18 @@ export const ClusterMapPage: React.FC<ClusterMapPageProps> = ({ onNavigate }) =>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 64px)' }}>
-      <h2 style={{ margin: '0 0 16px', fontSize: '24px', fontWeight: 700, color: '#1a1a2e' }}>
+      <h2 style={{ margin: '0 0 8px', fontSize: '24px', fontWeight: 700, color: '#1a1a2e' }}>
         Cluster Map
       </h2>
 
-      <div style={{ display: 'flex', flex: 1, gap: '16px', minHeight: 0 }}>
+      <div style={{ display: 'flex', flex: 1, gap: '12px', minHeight: 0 }}>
         <div
           style={{
-            flex: selectedDetail ? '1 1 60%' : '1 1 100%',
+            flex: 1,
             backgroundColor: '#fff',
             borderRadius: '8px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
             overflow: 'hidden',
-            transition: 'flex 0.3s',
           }}
         >
           <ClusterGraph

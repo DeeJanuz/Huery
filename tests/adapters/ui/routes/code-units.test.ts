@@ -3,6 +3,7 @@ import express from 'express';
 import { createCodeUnitsRoutes } from '@/adapters/ui/routes/code-units.js';
 import {
   InMemoryCodeUnitRepository,
+  InMemoryFileSystem,
   InMemoryFunctionCallRepository,
   InMemoryTypeFieldRepository,
 } from '../../../helpers/fakes/index.js';
@@ -18,15 +19,17 @@ describe('code-units routes', () => {
   let codeUnitRepo: InMemoryCodeUnitRepository;
   let functionCallRepo: InMemoryFunctionCallRepository;
   let typeFieldRepo: InMemoryTypeFieldRepository;
+  let fileSystem: InMemoryFileSystem;
   let app: ReturnType<typeof express>;
 
   beforeEach(() => {
     codeUnitRepo = new InMemoryCodeUnitRepository();
     functionCallRepo = new InMemoryFunctionCallRepository();
     typeFieldRepo = new InMemoryTypeFieldRepository();
+    fileSystem = new InMemoryFileSystem();
 
     app = express();
-    app.use('/api', createCodeUnitsRoutes({ codeUnitRepo, functionCallRepo, typeFieldRepo }));
+    app.use('/api', createCodeUnitsRoutes({ codeUnitRepo, functionCallRepo, typeFieldRepo, fileSystem }));
   });
 
   describe('GET /api/code-units', () => {
