@@ -1,5 +1,7 @@
 # Vector Search Implementation Design for Heury
 
+> **DEPRECATED (2026-03-01):** Vector search and the embedding pipeline were removed in ADR-008. The placeholder hash-based embeddings provided no real semantic value, and the architecture was replaced with MCP-driven enrichment (see `get-unenriched-units` and `set-unit-summaries` tools). This document is retained for historical reference only.
+
 ## Overview
 This document outlines the design for implementing local vector search in Heury to enable:
 1. **Semantic Code Search**: Find code units by meaning, not just keywords

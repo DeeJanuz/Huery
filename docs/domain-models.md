@@ -377,15 +377,15 @@ OPTIONS
 ---
 
 ### UnitSummary
-**Purpose:** Stores LLM-generated summaries of code units, produced by the BYOK enrichment pipeline.
+**Purpose:** Stores summaries of code units, submitted by the MCP client agent via the `set-unit-summaries` tool.
 
 **Properties:**
 - id: string - Primary key
 - codeUnitId: string - Foreign key to CodeUnit (unique)
-- summary: string - AI-generated summary of what the function does
+- summary: string - Summary of what the function does
 - keyBehaviors: string[] - List of key behaviors
 - sideEffects: string[] - List of side effects
-- providerModel: string - LLM provider and model used (e.g., "anthropic/claude-sonnet-4-20250514")
+- providerModel: string - Source of the summary (default: "mcp-client")
 - generatedAt: string - ISO timestamp of generation
 
 **Unique Constraint:** (codeUnitId)
@@ -583,23 +583,6 @@ OPTIONS
 
 ---
 
-### ILlmProvider
-**Purpose:** Port for BYOK LLM providers used by the enrichment pipeline to generate code unit summaries.
-
-**Properties:**
-- providerModel: string (readonly) - Provider and model identifier
-
-**Methods:**
-- generateSummary(prompt: string): Promise<string>
-
-### LlmProviderConfig
-**Properties:**
-- provider: 'anthropic' | 'openai' | 'gemini'
-- apiKey: string
-- model: string? - Optional model override
-- maxTokens: number? - Optional max tokens
-- baseUrl: string? - Optional base URL override
-
 ---
 
 ## Incremental Analysis Models
@@ -640,37 +623,6 @@ OPTIONS
 - envVarRepo: IEnvVariableRepository (readonly) - Repository for environment variable storage
 - guardClauseRepo: IGuardClauseRepository? (readonly) - Optional repository for guard clause storage
 - languageRegistry: LanguageRegistry (readonly) - Registry for resolving language extractors
-
----
-
-## Embedding Models
-
-### EmbeddingTextContext
-**Purpose:** Enriched context for building search-optimized embedding text. Wraps a CodeUnit with additional structural data from the call graph, event flows, LLM summaries, and file clusters.
-
-**Properties:**
-- unit: CodeUnit - The code unit to embed
-- summary: string? - LLM-generated summary (truncated to 50 words in output)
-- callers: string[]? - Names of functions that call this unit
-- callees: string[]? - Names of functions this unit calls
-- events: string[]? - Event names emitted or subscribed by this unit
-- clusterName: string? - Name of the feature area cluster this unit belongs to
-
-**Used by:** `buildEmbeddingText()` in `src/adapters/embedding/embedding-text-builder.ts`
-
----
-
-### EmbeddingPipelineDependencies
-**Purpose:** Dependencies for the EmbeddingPipeline application service.
-
-**Properties:**
-- codeUnitRepo: ICodeUnitRepository - Required
-- embeddingProvider: IEmbeddingProvider - Required
-- vectorSearch: IVectorSearchService - Required
-- unitSummaryRepo: IUnitSummaryRepository? - Optional, for enriching embeddings with LLM summaries
-- functionCallRepo: IFunctionCallRepository? - Optional, for enriching embeddings with caller/callee data
-- eventFlowRepo: IEventFlowRepository? - Optional, for enriching embeddings with event names
-- fileClusterRepo: IFileClusterRepository? - Optional, for enriching embeddings with cluster names
 
 ---
 

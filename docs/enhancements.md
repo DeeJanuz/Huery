@@ -1,8 +1,8 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-03-01
-**Total Active Issues:** 14
-**Resolved This Month:** 9
+**Total Active Issues:** 11
+**Resolved This Month:** 12
 
 ---
 
@@ -10,13 +10,13 @@
 
 ### Medium Severity
 
-#### [MED-004] analyzeCommand Now Manages Four Execution Paths (SRP Escalation)
+#### [MED-004] analyzeCommand Still Has Duplicated Manifest Generation (SRP -- Partially Resolved)
 - **File:** `src/cli/commands/analyze.ts`
-- **Principle:** SRP, DIP
-- **Description:** The `analyzeCommand` function now orchestrates four distinct execution paths: full analysis, incremental analysis, manifest generation, and enrichment. The `runIncrementalAnalysis` helper added in commit 2a6205f duplicates the `generateManifests` call block verbatim from the full analysis path (lines 64-80 vs 127-143). The file has grown to 206 lines with 4 responsibilities. The enrichment path still creates a second `DatabaseManager`, second `SqliteCodeUnitRepository`, and `SqliteUnitSummaryRepository` with direct concrete imports. Escalated from LOW-004 and updated from previous MED-004 assessment -- the fourth execution path worsens the SRP concern.
-- **Suggested Fix:** (1) Extract a shared `generateManifestsForDeps(dependencies, options, config, fs)` helper to deduplicate the manifest generation call. (2) Move enrichment wiring into the composition root so `analyzeCommand` receives a pre-built `EnrichmentService`. (3) Consider a strategy pattern or command dispatch for the full/incremental/enrich paths.
+- **Principle:** SRP, DRY
+- **Description:** The enrichment execution path and its DIP violations (second `DatabaseManager`, concrete `SqliteCodeUnitRepository` imports) were removed in commit ec964d0. The command now has two execution paths (full and incremental) instead of four, which is a significant improvement. However, the duplicated `generateManifests` call block between the full analysis path and `runIncrementalAnalysis` remains (see LOW-014). Downgraded from previous severity since the DIP concerns are resolved.
+- **Suggested Fix:** (1) Extract a shared `generateManifestsForContext(dependencies, options, config, fs)` helper to deduplicate the manifest generation call. (2) Consider a strategy pattern for the full/incremental paths if more paths are added.
 - **Detected:** 2026-02-28, commit f749d47
-- **Updated:** 2026-02-28, commit 2a6205f
+- **Updated:** 2026-03-01, commit ec964d0 (enrichment path removed, DIP violations resolved)
 
 #### [MED-005] schema-model-extractor.ts at 507 Lines with Four Framework Parsers (Growing SRP)
 - **File:** `src/extraction/schema-model-extractor.ts`
@@ -84,13 +84,6 @@
 - **Suggested Fix:** Bundle the repository dependencies into a single `ModulesGeneratorDeps` interface object, keeping `maxTokens` as a separate parameter or part of an options object. This matches the pattern already used by `DeepAnalysisDependencies` and `AnalysisDependencies` in the same codebase. Low urgency since only 5 params currently.
 - **Detected:** 2026-02-28, commit a1b78ca
 
-#### [LOW-007] LLM Provider Factory Uses Switch on Provider Type
-- **File:** `src/adapters/llm/llm-provider-factory.ts`
-- **Principle:** OCP
-- **Description:** The `createLlmProvider` factory uses a `switch` statement on `config.provider` to instantiate one of three concrete providers. Adding a new LLM provider requires modifying this switch. This is a textbook OCP violation, though at 3 providers in a factory function it is pragmatic and contained.
-- **Suggested Fix:** Consider a registry-map approach (`Map<string, (config) => ILlmProvider>`) that allows registering new providers without modifying the factory body. Low urgency since provider additions are infrequent.
-- **Detected:** 2026-02-28, commit f749d47
-
 #### [LOW-006] Duplicated getLineNumber Utility Across Extractors
 - **File:** `src/extraction/event-flow-extractor.ts`, `src/extraction/schema-model-extractor.ts`
 - **Principle:** DRY (supporting SRP)
@@ -105,13 +98,6 @@
 - **Suggested Fix:** Rename to `ts-code-unit-extractor.ts` (or similar) to match actual scope. If the file grows past ~600 lines, consider extracting each construct extractor into its own module with a registry pattern so new types can be added without modifying `extractCodeUnits`. Monitor for now.
 - **Detected:** 2026-02-28, commit dae2249
 
-#### [LOW-004] analyzeCommand Accumulating Post-Analysis Responsibilities -- ESCALATED to MED-004
-- **File:** `src/cli/commands/analyze.ts`
-- **Principle:** SRP
-- **Description:** Originally noted as low severity when only analysis + manifests existed. Now escalated to MED-004 since the enrichment step was added as a third responsibility. See MED-004 for current assessment.
-- **Detected:** 2026-02-28, commit d0f6552
-- **Escalated:** 2026-02-28, commit f749d47
-
 #### [LOW-002] LanguageExtractor Interface Could Be Segregated
 - **File:** `src/extraction/language-registry.ts`
 - **Principle:** ISP
@@ -122,6 +108,14 @@
 ---
 
 ## Resolved Issues
+
+#### [LOW-007] LLM Provider Factory Uses Switch on Provider Type
+- **Resolved:** 2026-03-01, commit ec964d0
+- **Resolution:** Entire LLM provider subsystem removed. The factory, all three provider adapters (Anthropic, OpenAI, Gemini), and the `ILlmProvider` port interface were deleted. Enrichment is now handled via MCP tools, eliminating the need for built-in LLM providers.
+
+#### [LOW-004] analyzeCommand Accumulating Post-Analysis Responsibilities (Enrichment Path)
+- **Resolved:** 2026-03-01, commit ec964d0
+- **Resolution:** The enrichment execution path was removed from `analyzeCommand`. The `runEnrichment` function (which created a second `DatabaseManager` and had concrete `SqliteCodeUnitRepository` imports) was deleted entirely. Enrichment is now handled via MCP tools (`set-unit-summaries`, `get-unenriched-units`). Remaining full/incremental path duplication tracked in MED-004 and LOW-014.
 
 #### [LOW-017] Duplicated generateTestFileCandidates Logic Between get-implementation-context.ts and get-test-patterns.ts
 - **Resolved:** 2026-03-01, commit e11fdfc
@@ -161,9 +155,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 14 |
+| Total Active | 11 |
 | Critical | 0 |
 | High | 0 |
 | Medium | 3 |
-| Low | 11 |
-| Resolved This Month | 9 |
+| Low | 8 |
+| Resolved This Month | 12 |
