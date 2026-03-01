@@ -192,9 +192,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 12 |
+| Total Active | 16 |
 | Critical | 0 |
-| High | 0 |
-| Medium | 3 |
-| Low | 9 |
+| High | 1 |
+| Medium | 5 |
+| Low | 10 |
 | Resolved This Month | 12 |

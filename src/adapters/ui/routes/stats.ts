@@ -10,6 +10,7 @@ import type {
   IEnvVariableRepository,
   IFileClusterRepository,
 } from '@/domain/ports/index.js';
+import { wrapHandler } from '../route-handler.js';
 
 interface StatsDependencies {
   codeUnitRepo: ICodeUnitRepository;
@@ -21,40 +22,34 @@ interface StatsDependencies {
 export function createStatsRoutes(deps: StatsDependencies): ReturnType<typeof Router> {
   const router = Router();
 
-  router.get('/stats', (_req: Request, res: Response) => {
-    try {
-      const allUnits = deps.codeUnitRepo.findAll();
-      const allDeps = deps.dependencyRepo.findAll();
-      const allEnvVars = deps.envVarRepo.findAll();
-      const allClusters = deps.fileClusterRepo.findAll();
+  router.get('/stats', wrapHandler((_req: Request, res: Response) => {
+    const allUnits = deps.codeUnitRepo.findAll();
+    const allDeps = deps.dependencyRepo.findAll();
+    const allEnvVars = deps.envVarRepo.findAll();
+    const allClusters = deps.fileClusterRepo.findAll();
 
-      const files = new Set(allUnits.map((u) => u.filePath));
+    const files = new Set(allUnits.map((u) => u.filePath));
 
-      const languages: Record<string, number> = {};
-      for (const unit of allUnits) {
-        languages[unit.language] = (languages[unit.language] ?? 0) + 1;
-      }
-
-      const patternCount = allUnits.reduce(
-        (sum, u) => sum + u.patterns.length,
-        0,
-      );
-
-      res.json({
-        total_code_units: allUnits.length,
-        total_files: files.size,
-        total_patterns: patternCount,
-        total_dependencies: allDeps.length,
-        total_env_variables: allEnvVars.length,
-        languages,
-        total_clusters: allClusters.length,
-      });
-    } catch (error) {
-      res
-        .status(500)
-        .json({ error: error instanceof Error ? error.message : String(error) });
+    const languages: Record<string, number> = {};
+    for (const unit of allUnits) {
+      languages[unit.language] = (languages[unit.language] ?? 0) + 1;
     }
-  });
+
+    const patternCount = allUnits.reduce(
+      (sum, u) => sum + u.patterns.length,
+      0,
+    );
+
+    res.json({
+      total_code_units: allUnits.length,
+      total_files: files.size,
+      total_patterns: patternCount,
+      total_dependencies: allDeps.length,
+      total_env_variables: allEnvVars.length,
+      languages,
+      total_clusters: allClusters.length,
+    });
+  }));
 
   return router;
 }
