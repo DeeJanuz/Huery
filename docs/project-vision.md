@@ -289,7 +289,7 @@ npx heury init
 | Database | SQLite via better-sqlite3 |
 | MCP SDK | @modelcontextprotocol/sdk |
 | Web Server | Express 5 (for UI viewer) |
-| Frontend | React 19, React Flow, Vite 7 (dev dependency, built into dist) |
+| Frontend | React 19, d3-force, Vite 7 (dev dependency, built into dist) |
 | Testing | Vitest |
 | Build | tsup (server), Vite (UI client) |
 

@@ -60,6 +60,23 @@ Copy the rules from [RULES.md](RULES.md) into your agent's rules file so it know
 | Patterns | `get-patterns-by-type`, `find-implementation-pattern`, `validate-against-patterns`, `get-test-patterns` |
 | Planning | `plan-change-impact`, `get-feature-area`, `get-implementation-context` |
 
+## UI viewer
+
+Browse your analysis data in a local web UI:
+
+```sh
+heury ui
+```
+
+Opens a viewer at `http://localhost:3939` with:
+
+- **Dashboard** — overview statistics and metrics
+- **Search** — full-text search across code units with filtering
+- **Cluster Map** — force-directed galaxy layout where connected clusters form tight groups and disconnected clusters orbit in a halo. Color-coded connected components with background halos for visual differentiation. Typeahead search to find and zoom to clusters.
+- **Code Unit Detail** — full context for a function or class: callers, callees, type fields, events, and extracted source code with line numbers
+
+Use `--host 0.0.0.0` to access from another machine on your network.
+
 ## Keeping analysis fresh
 
 Install a git hook to run incremental analysis on every commit:
