@@ -494,12 +494,12 @@ Add a `heury ui` command that starts a local Express server serving a pre-built 
 2. **Frontend**: React 19 SPA with 4 pages:
    - Dashboard - Overview statistics and metrics
    - Search - Search across code units with filtering
-   - Cluster Map - Interactive cluster graph with pre-computed inter-cluster dependency edges (React Flow with dagre LR layout, weighted edges)
-   - Code Unit Detail - Full context for a code unit (calls, callers, type fields, events)
+   - Cluster Map - Galaxy-style force-directed cluster graph (d3-force) with color-coded connected components, background halos per group, and typeahead search with zoom-to-cluster
+   - Code Unit Detail - Full context for a code unit (calls, callers, type fields, events, extracted source code)
 
 3. **Build pipeline**: Vite builds the React client into `dist/` alongside the server bundle. The Express server serves the built client as static files with SPA fallback.
 
-4. **Dependencies**: Express 5 added as a production dependency. React, React Flow, Vite, and dagre added as dev dependencies (only needed at build time).
+4. **Dependencies**: Express 5 added as a production dependency. React, d3-force, and Vite added as dev dependencies (only needed at build time).
 
 5. **Network binding**: Binds to `localhost` by default (local-only access). Supports `--host 0.0.0.0` flag for remote access when needed (e.g., accessing from another machine on the network).
 
@@ -509,10 +509,10 @@ Add a `heury ui` command that starts a local Express server serving a pre-built 
 - API routes follow the same port/adapter pattern as MCP tools, reusing the same repository interfaces
 - Express is lightweight and already familiar in the Node.js ecosystem
 
-**Why React + React Flow:**
-- React Flow provides interactive graph visualization needed for the cluster mind-map
+**Why React + d3-force:**
+- d3-force provides physics-based layout where connected clusters form tight groups and disconnected clusters orbit in a halo
 - React is standard for SPAs with multiple views and state management
-- dagre provides automatic graph layout for cluster visualization
+- SVG rendering with d3-force gives full control over node/edge styling and interactive features (search, zoom)
 
 **Why dev dependencies for frontend:**
 - React, Vite, and React Flow are only needed at build time
@@ -582,3 +582,4 @@ Add a `heury ui` command that starts a local Express server serving a pre-built 
 | 2026-03-01 | ADR-005 | Updated: Removed stale enrichment/embedding references (superseded by ADR-008) | System |
 | 2026-03-01 | ADR-009 | Initial: Local web UI viewer with Express + React SPA, `heury ui` command | System |
 | 2026-03-01 | ADR-009 | Updated: Added --host flag for remote access, fixed frontend types to match API responses (snake_case), SIGPIPE handling for background execution | System |
+| 2026-03-01 | ADR-009 | Updated: Replaced dagre with d3-force for galaxy-style cluster layout with connected component grouping, color-coded nodes, and typeahead search; added extracted source code panel to code unit detail page; wrapHandler supports async route handlers | System |

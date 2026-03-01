@@ -1,7 +1,7 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-03-01
-**Total Active Issues:** 18
+**Total Active Issues:** 20
 **Resolved This Month:** 13
 
 ---
@@ -10,13 +10,20 @@
 
 ### Medium Severity
 
+#### [MED-010] ClusterGraph.tsx at 671 Lines with 5+ Responsibilities (SRP)
+- **File:** `src/adapters/ui/client/src/components/ClusterGraph.tsx`
+- **Principle:** SRP
+- **Description:** This single file now contains: (1) force-directed layout computation (`buildLayoutedElements`, ~200 lines), (2) connected component graph analysis (`findConnectedComponents`), (3) color theme management (`getGroupColor`/`GROUP_HUES`), (4) a full typeahead search widget (`ClusterSearch`, ~200 lines with keyboard navigation and ARIA), (5) graph rendering (`ClusterGraph`), and (6) two custom node types (`ClusterNode`, `GroupBackgroundNode`). The `buildLayoutedElements` function is a god-function orchestrating simulation setup, initial positioning, force configuration, halo node generation, and color assignment. The `ClusterSearch` component is fully self-contained and could be extracted to its own file. `findConnectedComponents` is a pure graph algorithm that belongs in a utility.
+- **Suggested Fix:** Extract `ClusterSearch` into `ClusterSearch.tsx`. Extract `findConnectedComponents` and layout logic into `cluster-layout.ts`. Extract color theme into `cluster-colors.ts`. This would reduce `ClusterGraph.tsx` to ~150 lines of composition and rendering.
+- **Detected:** 2026-03-01, commit f82edf3
+
 #### [MED-009] UI Frontend Has No Test Coverage (Downgraded from HIGH-001)
 - **File:** `src/adapters/ui/frontend/**`
 - **Principle:** Quality / TDD
-- **Description:** Backend route handlers now have 62 tests across 8 test files covering all 7 route factories, the `wrapHandler` utility, the `cluster-detail` module, and shared test helpers (commit 77e5c75). Remaining untested: the frontend `useApi` hook, `parseRoute` function, and React components. These are lower risk than the backend routes but still contain testable logic.
-- **Suggested Fix:** Add unit tests for `parseRoute` hash parsing and the `useApi` hook state management. React component tests are lower priority.
+- **Description:** Backend route handlers now have 62 tests across 8 test files covering all 7 route factories, the `wrapHandler` utility, the `cluster-detail` module, and shared test helpers (commit 77e5c75). Remaining untested: the frontend `useApi` hook, `parseRoute` function, and React components. These are lower risk than the backend routes but still contain testable logic. Additionally, `findConnectedComponents` and `buildLayoutedElements` in ClusterGraph.tsx are pure functions highly amenable to unit testing, and the `wrapHandler` async error path added in commit f82edf3 lacks test coverage.
+- **Suggested Fix:** Add unit tests for `parseRoute` hash parsing and the `useApi` hook state management. Add tests for `findConnectedComponents` and the async error path in `wrapHandler`. React component tests are lower priority.
 - **Detected:** 2026-03-01, commit 5ece8c4
-- **Updated:** 2026-03-01, commit d5867e1 (frontend types rewritten with expanded surface area -- more untested logic in type mapping within pages)
+- **Updated:** 2026-03-01, commit f82edf3 (ClusterGraph.tsx gained ~500 lines of untested pure logic; wrapHandler async path untested)
 
 #### [MED-008] UI Routes: search.ts and stats.ts Still Use findAll (Scalability -- Partially Resolved)
 - **File:** `src/adapters/ui/routes/search.ts`, `src/adapters/ui/routes/stats.ts`
@@ -135,6 +142,13 @@
 - **Suggested Fix:** Investigate whether the process actually exits without this line. If it does (e.g., due to SIGPIPE closing stdio handles), document the reason in a comment. If it does not, remove the line.
 - **Detected:** 2026-03-01, commit d5867e1
 
+#### [LOW-022] wrapHandler Async Error Path Has No Test Coverage
+- **File:** `src/adapters/ui/route-handler.ts`
+- **Principle:** Quality / TDD
+- **Description:** The `wrapHandler` utility was extended in commit f82edf3 to support async route handlers via `Promise` detection and `.catch()`. The synchronous error path has test coverage but the new async error path does not. If the async catch logic regresses (e.g., a future refactor drops the `instanceof Promise` check), the error would surface as an unhandled promise rejection rather than a 500 response.
+- **Suggested Fix:** Add a test case in `route-handler.test.ts` that passes an async handler which throws, and verify it returns a 500 JSON error response. Trivial addition.
+- **Detected:** 2026-03-01, commit f82edf3
+
 #### [LOW-002] LanguageExtractor Interface Could Be Segregated
 - **File:** `src/extraction/language-registry.ts`
 - **Principle:** ISP
@@ -204,9 +218,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 18 |
+| Total Active | 20 |
 | Critical | 0 |
 | High | 0 |
-| Medium | 5 |
-| Low | 13 |
+| Medium | 6 |
+| Low | 14 |
 | Resolved This Month | 13 |
