@@ -1,7 +1,7 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-03-01
-**Total Active Issues:** 16
+**Total Active Issues:** 18
 **Resolved This Month:** 13
 
 ---
@@ -16,7 +16,7 @@
 - **Description:** Backend route handlers now have 62 tests across 8 test files covering all 7 route factories, the `wrapHandler` utility, the `cluster-detail` module, and shared test helpers (commit 77e5c75). Remaining untested: the frontend `useApi` hook, `parseRoute` function, and React components. These are lower risk than the backend routes but still contain testable logic.
 - **Suggested Fix:** Add unit tests for `parseRoute` hash parsing and the `useApi` hook state management. React component tests are lower priority.
 - **Detected:** 2026-03-01, commit 5ece8c4
-- **Updated:** 2026-03-01, commit 77e5c75 (backend routes fully tested, downgraded from HIGH to MED)
+- **Updated:** 2026-03-01, commit d5867e1 (frontend types rewritten with expanded surface area -- more untested logic in type mapping within pages)
 
 #### [MED-008] UI Routes: search.ts and stats.ts Still Use findAll (Scalability -- Partially Resolved)
 - **File:** `src/adapters/ui/routes/search.ts`, `src/adapters/ui/routes/stats.ts`
@@ -121,6 +121,20 @@
 - **Suggested Fix:** Update ADR-008 to note that the MCP enrichment tools were subsequently removed. Remove `ILlmProvider` from ADR-005 line 266. Update the `rag-implementation-design.md` deprecation notice to reflect that enrichment was fully removed, not replaced.
 - **Detected:** 2026-03-01, commit 56dbd1a
 
+#### [LOW-020] Global SIGPIPE Banner Affects All Build Outputs (Scope)
+- **File:** `tsup.config.ts`
+- **Principle:** SRP (build config should not inject runtime behavior for a single command)
+- **Description:** The `process.on("SIGPIPE", () => {})` handler is injected via tsup `banner` into every built JS file. Only the UI server command (`ui.ts`) needs this for background process resilience. Applying it globally masks potential SIGPIPE issues in other contexts (e.g., MCP stdio transport where SIGPIPE may be meaningful).
+- **Suggested Fix:** Move the SIGPIPE handler into `src/cli/commands/ui.ts` at the top of `uiCommand()`, or create a dedicated entry point for the UI server. Remove the global banner from `tsup.config.ts`.
+- **Detected:** 2026-03-01, commit d5867e1
+
+#### [LOW-021] Unexplained keepalive setInterval in uiCommand (Process Lifecycle)
+- **File:** `src/cli/commands/ui.ts`
+- **Principle:** Code clarity / SRP
+- **Description:** `setInterval(() => {}, 1 << 30)` is used to keep the Node.js process alive after starting the Express server. However, `app.listen()` already keeps the event loop active via the HTTP server handle. If this addresses a specific scenario (e.g., detached child process with closed stdio), it should be documented. Otherwise it is dead code that obscures the actual process lifecycle.
+- **Suggested Fix:** Investigate whether the process actually exits without this line. If it does (e.g., due to SIGPIPE closing stdio handles), document the reason in a comment. If it does not, remove the line.
+- **Detected:** 2026-03-01, commit d5867e1
+
 #### [LOW-002] LanguageExtractor Interface Could Be Segregated
 - **File:** `src/extraction/language-registry.ts`
 - **Principle:** ISP
@@ -190,9 +204,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 16 |
+| Total Active | 18 |
 | Critical | 0 |
 | High | 0 |
 | Medium | 5 |
-| Low | 11 |
+| Low | 13 |
 | Resolved This Month | 13 |

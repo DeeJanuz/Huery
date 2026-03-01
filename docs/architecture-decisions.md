@@ -487,14 +487,14 @@ Add a `heury ui` command that starts a local Express server serving a pre-built 
    - `/api/code-units` - Code unit listing and detail
    - `/api/search` - Full-text search across code units
    - `/api/dependencies` - File dependency graph data
-   - `/api/clusters` - Feature area clusters and members
+   - `/api/clusters` - Feature area clusters, members, and inter-cluster relationship edges
    - `/api/function-calls` - Function call relationships
    - `/api/event-flows` - Event emission/subscription data
 
 2. **Frontend**: React 19 SPA with 4 pages:
    - Dashboard - Overview statistics and metrics
    - Search - Search across code units with filtering
-   - Cluster Map - Interactive cluster mind-map (React Flow with dagre layout)
+   - Cluster Map - Interactive cluster graph with pre-computed inter-cluster dependency edges (React Flow with dagre LR layout, weighted edges)
    - Code Unit Detail - Full context for a code unit (calls, callers, type fields, events)
 
 3. **Build pipeline**: Vite builds the React client into `dist/` alongside the server bundle. The Express server serves the built client as static files with SPA fallback.
