@@ -4,6 +4,7 @@ import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { analyzeCommand } from './commands/analyze.js';
 import { serveCommand } from './commands/serve.js';
+import { uiCommand } from './commands/ui.js';
 import { hookInstallCommand, hookRemoveCommand } from './commands/hook.js';
 
 const program = new Command();
@@ -49,5 +50,12 @@ program
   .option('-d, --dir <directory>', 'Project directory', '.')
   .option('--transport <type>', 'Transport type (stdio|http)', 'stdio')
   .action((options) => serveCommand(options));
+
+program
+  .command('ui')
+  .description('Start the UI viewer')
+  .option('-d, --dir <directory>', 'Project directory', '.')
+  .option('-p, --port <port>', 'Port number', '3939')
+  .action((options) => uiCommand(options));
 
 program.parse();
