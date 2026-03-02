@@ -1,8 +1,7 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-03-02
-**Total Active Issues:** 20
-**Resolved This Month:** 13
+**Total Active Issues:** 16
 
 ---
 
@@ -33,13 +32,11 @@
 - **Detected:** 2026-03-01, commit 5ece8c4
 - **Updated:** 2026-03-01, commit 77e5c75 (code-units.ts now uses targeted queries)
 
-#### [MED-004] analyzeCommand Still Has Duplicated Manifest Generation (SRP -- Partially Resolved)
+#### ~~[MED-004] analyzeCommand Still Has Duplicated Manifest Generation (SRP -- RESOLVED)~~
 - **File:** `src/cli/commands/analyze.ts`
 - **Principle:** SRP, DRY
-- **Description:** The enrichment execution path and its DIP violations (second `DatabaseManager`, concrete `SqliteCodeUnitRepository` imports) were removed in commit ec964d0. The command now has two execution paths (full and incremental) instead of four, which is a significant improvement. However, the duplicated `generateManifests` call block between the full analysis path and `runIncrementalAnalysis` remains (see LOW-014). Downgraded from previous severity since the DIP concerns are resolved.
-- **Suggested Fix:** (1) Extract a shared `generateManifestsForContext(dependencies, options, config, fs)` helper to deduplicate the manifest generation call. (2) Consider a strategy pattern for the full/incremental paths if more paths are added.
-- **Detected:** 2026-02-28, commit f749d47
-- **Updated:** 2026-03-01, commit ec964d0 (enrichment path removed, DIP violations resolved)
+- **Resolution:** Extracted `runManifestGeneration` helper in `analyze.ts` that both full and incremental paths call. Duplicated manifest generation block eliminated.
+- **Resolved:** 2026-03-02, commit fc12ce2
 
 #### [MED-005] schema-model-extractor.ts at 507 Lines with Four Framework Parsers (Growing SRP)
 - **File:** `src/extraction/schema-model-extractor.ts`
@@ -58,12 +55,11 @@
 
 ### Low Severity
 
-#### [LOW-014] Duplicated generateManifests Call Block in analyze.ts (Full vs Incremental)
+#### ~~[LOW-014] Duplicated generateManifests Call Block in analyze.ts (Full vs Incremental -- RESOLVED)~~
 - **File:** `src/cli/commands/analyze.ts`
 - **Principle:** DRY (supporting SRP)
-- **Description:** The `generateManifests` invocation with its 9-property dependency object and 2-property options object is copy-pasted verbatim between the full analysis path (lines 64-80) and the `runIncrementalAnalysis` helper (lines 127-143). This means any change to the manifest generation call (e.g., adding a new repo dependency) must be applied in two places.
-- **Suggested Fix:** Extract a shared helper function like `generateManifestsForContext(dependencies, options, config, fs)` that both paths call. Trivial fix.
-- **Detected:** 2026-02-28, commit 2a6205f
+- **Resolution:** Extracted `runManifestGeneration` helper function that both full and incremental paths call. See also MED-004.
+- **Resolved:** 2026-03-02, commit fc12ce2
 
 #### [LOW-013] hook.ts Uses Concrete NodeFileSystem Fallback (DIP)
 - **File:** `src/cli/commands/hook.ts`
@@ -72,19 +68,17 @@
 - **Suggested Fix:** Wire the file system from the CLI entry point (`index.ts`) or a composition root, removing concrete adapter imports from command files. Low urgency since the injection seam already makes this testable.
 - **Detected:** 2026-02-28, commit 2a6205f
 
-#### [LOW-012] incremental-analyzer.ts Contains Duplicate globToRegex / passesGlobFilters Logic
+#### ~~[LOW-012] incremental-analyzer.ts Contains Duplicate globToRegex / passesGlobFilters Logic (RESOLVED)~~
 - **File:** `src/application/incremental/incremental-analyzer.ts`
 - **Principle:** DRY (supporting SRP)
-- **Description:** The `globToRegex` and `passesGlobFilters` functions in `incremental-analyzer.ts` duplicate the glob-matching logic that already exists in `src/application/file-filter.ts` (via `shouldProcessFile`). The incremental analyzer calls `shouldProcessFile` for language-extension checking but then also applies its own separate glob filtering. This dual filtering path means changes to glob behavior need to be synchronized in two places.
-- **Suggested Fix:** Consolidate the glob filtering into `file-filter.ts` (e.g., expose a `passesGlobFilters` function there) and have the incremental analyzer use it. The `shouldProcessFile` function could be extended to accept include/exclude patterns, or a separate exported utility could be shared.
-- **Detected:** 2026-02-28, commit 2a6205f
+- **Resolution:** Exported `globToRegex` and `passesGlobFilters` from `src/application/file-filter.ts`. Removed duplicate copies from `incremental-analyzer.ts`.
+- **Resolved:** 2026-03-02, commit fc12ce2
 
-#### [LOW-011] Duplicated Graph-Building Logic Between transitive-deps.ts and circular-deps.ts
+#### ~~[LOW-011] Duplicated Graph-Building Logic Between transitive-deps.ts and circular-deps.ts (RESOLVED)~~
 - **File:** `src/application/graph-analysis/transitive-deps.ts`, `src/application/graph-analysis/circular-deps.ts`
 - **Principle:** DRY (supporting SRP)
-- **Description:** Both `transitive-deps.ts` (`buildDirectedAdjacency`) and `circular-deps.ts` (`buildDirectedGraph`) contain near-identical logic for building a `Map<string, Set<string>>` adjacency graph from `FileDependency[]`, including the same deduplication-via-seen-set approach and node-existence guarantees. The `transitive-deps` version adds directional reversal for the "dependents" direction, but the core structure (iterate deps, deduplicate by string key, populate Map of Sets) is duplicated.
-- **Suggested Fix:** Extract a shared `buildAdjacencyGraph(deps, direction?)` utility into a `src/application/graph-analysis/graph-utils.ts` module. Both consumers would call this shared function. The `direction` parameter (defaulting to `'dependencies'`) handles the edge reversal for the transitive-deps use case. Trivial fix with no behavioral change.
-- **Detected:** 2026-02-28, commit 3e8721b
+- **Resolution:** Extracted `buildAdjacencyGraph(deps, direction?)` to `src/application/graph-analysis/graph-utils.ts`. Both `transitive-deps.ts` and `circular-deps.ts` now use the shared utility.
+- **Resolved:** 2026-03-02, commit fc12ce2
 
 #### [LOW-010] generatePatternsManifest Growing Positional Parameter List (5 Params)
 - **File:** `src/application/manifest/patterns-generator.ts`
@@ -108,12 +102,18 @@
 - **Suggested Fix:** Bundle the repository dependencies into a single `ModulesGeneratorDeps` interface object, keeping `maxTokens` as a separate parameter or part of an options object. This matches the pattern already used by `DeepAnalysisDependencies` and `AnalysisDependencies` in the same codebase. Low urgency since only 5 params currently.
 - **Detected:** 2026-02-28, commit a1b78ca
 
-#### [LOW-006] Duplicated getLineNumber Utility Across Extractors
+#### ~~[LOW-006] Duplicated getLineNumber Utility Across Extractors (RESOLVED)~~
 - **File:** `src/extraction/event-flow-extractor.ts`, `src/extraction/schema-model-extractor.ts`
 - **Principle:** DRY (supporting SRP)
-- **Description:** Both `event-flow-extractor.ts` and `schema-model-extractor.ts` contain identical `getLineNumber(content, offset)` functions that compute 1-based line numbers from character offsets. This is a small but clear duplication.
-- **Suggested Fix:** Extract into a shared `src/extraction/utils.ts` or similar. Trivial fix.
-- **Detected:** 2026-02-28, commit f749d47
+- **Resolution:** Extracted `getLineNumber` to `src/extraction/extraction-utils.ts`. Both extractors now import from the shared module.
+- **Resolved:** 2026-03-02, commit fc12ce2
+
+#### [LOW-023] shouldProcessFile Contains Inline Glob Logic Duplicating passesGlobFilters (DRY)
+- **File:** `src/application/file-filter.ts`
+- **Principle:** DRY
+- **Description:** The `shouldProcessFile` function (lines 94-107) contains inline exclude/include glob-checking logic that is semantically identical to the `passesGlobFilters` function defined at lines 41-54 of the same file. The `passesGlobFilters` function was extracted in commit fc12ce2 but `shouldProcessFile` was not updated to call it. Additionally, `passesGlobFilters` is exported but currently has zero consumers in the codebase.
+- **Suggested Fix:** Replace the inline glob logic in `shouldProcessFile` with a call to `passesGlobFilters(filePath, opts)`. Trivial one-line change.
+- **Detected:** 2026-03-02, commit fc12ce2
 
 #### [LOW-005] function-extractor.ts Name and Scope Mismatch (Growing SRP Concern)
 - **File:** `src/extraction/function-extractor.ts`
@@ -159,77 +159,13 @@
 
 ---
 
-## Resolved Issues
-
-#### [MED-011] ui.ts Mixes Process Management Utilities with CLI Command (SRP)
-- **Resolved:** 2026-03-02
-- **Resolution:** Extracted `killProcessOnPort`, `isPortInUse`, and `waitForExit` into `src/cli/utils/port-manager.ts` with a `ProcessDiscovery` strategy interface for platform abstraction and testability. Default implementation uses `lsof`/`process.kill`. The `ui.ts` command now imports from the extracted module.
-
-#### [LOW-023] killProcessOnPort and Related Functions Have No Test Coverage
-- **Resolved:** 2026-03-02
-- **Resolution:** Added 7 tests in `tests/cli/utils/port-manager.test.ts` covering: port free, findPidOnPort returns null, SIGTERM succeeds, SIGTERM timeout requiring SIGKILL, SIGTERM throws (invalid PID), and `isPortInUse` with actual `net.createServer` (port occupied and port free). Tests use `ProcessDiscovery` interface for injection rather than mocking globals.
-
-#### [HIGH-001] UI Feature Has Zero Test Coverage (3300+ Lines Untested)
-- **Resolved:** 2026-03-01, commit 77e5c75
-- **Resolution:** Added 62 tests across 8 test files covering all 7 backend route factories, `wrapHandler` utility, `cluster-detail` module, and shared test helpers. Remaining frontend coverage (useApi hook, parseRoute, React components) tracked as MED-009.
-
-#### [MED-007] clusters.ts GET /clusters/:id Handler Is a God-Handler (SRP)
-- **Resolved:** 2026-03-01, commit 77e5c75
-- **Resolution:** Extracted `collectClusterCodeUnits` and `classifyClusterDependencies` into `src/adapters/ui/cluster-detail.ts` with typed interfaces (`ClusterCodeUnit`, `ClassifiedDependencies`). The route handler now only handles HTTP concerns (parse params, call helpers, send response). Extracted module has 223-line dedicated test file.
-
-#### [LOW-019] Duplicated Error Handling Pattern Across 7 UI Route Files (DRY)
-- **Resolved:** 2026-03-01, commit 77e5c75
-- **Resolution:** Extracted `wrapHandler()` utility into `src/adapters/ui/route-handler.ts`. All 7 route files now wrap handlers with this utility, eliminating 10+ duplicated try/catch blocks. Utility has dedicated test coverage.
-
-#### [LOW-007] LLM Provider Factory Uses Switch on Provider Type
-- **Resolved:** 2026-03-01, commit ec964d0
-- **Resolution:** Entire LLM provider subsystem removed. The factory, all three provider adapters (Anthropic, OpenAI, Gemini), and the `ILlmProvider` port interface were deleted. Enrichment was subsequently removed entirely (ADR-008) as pre-computed summaries were redundant with raw data exposed via MCP tools.
-
-#### [LOW-004] analyzeCommand Accumulating Post-Analysis Responsibilities (Enrichment Path)
-- **Resolved:** 2026-03-01, commit ec964d0
-- **Resolution:** The enrichment execution path was removed from `analyzeCommand`. The `runEnrichment` function (which created a second `DatabaseManager` and had concrete `SqliteCodeUnitRepository` imports) was deleted entirely. The MCP enrichment tools (`set-unit-summaries`, `get-unenriched-units`) were subsequently removed in commit 56dbd1a as redundant. Remaining full/incremental path duplication tracked in MED-004 and LOW-014.
-
-#### [LOW-017] Duplicated generateTestFileCandidates Logic Between get-implementation-context.ts and get-test-patterns.ts
-- **Resolved:** 2026-03-01, commit e11fdfc
-- **Resolution:** Extracted shared `generateTestFileCandidates` into `src/adapters/mcp/test-file-discovery.ts` with `TestFileCandidate` return type. Both tools now import from the shared module.
-
-#### [LOW-016] get-test-patterns.ts at 387 Lines with Multiple Concerns (SRP)
-- **Resolved:** 2026-03-01, commit e11fdfc
-- **Resolution:** Extracted `findSimilarUnits` into `src/adapters/mcp/similar-units.ts`, `extractTestStructure`/`summarizeSetupBody`/`determineConventions` into `src/adapters/mcp/test-structure-parser.ts`. File reduced from 387 to 157 lines.
-
-#### [LOW-015] get-implementation-context.ts at 300 Lines Composing 6 Data Sources (SRP)
-- **Resolved:** 2026-03-01, commit e11fdfc
-- **Resolution:** Extracted `generateTestFileCandidates` into shared module, reducing file from 300 to 268 lines. Each data-gathering step remains well-factored into its own function. Monitoring threshold no longer in concern range.
-
-#### [LOW-003] Duplicated Traversal Logic Between findBlockEnd and findBlockEndIndex
-- **Resolved:** 2026-02-28
-- **Resolution:** Extracted shared `findClosingBrace()` helper that returns both `charIndex` and `lineNumber`; `findBlockEnd` and `findBlockEndIndex` are now thin wrappers.
-
-#### [MED-001] AnalysisOrchestrator: Duplication Between analyze() and analyzeIncremental()
-- **Resolved:** 2026-02-27, commit 3153f0a
-- **Resolution:** Extracted shared `processFiles()` method; both `analyze()` and `analyzeIncremental()` delegate to it.
-
-#### [MED-002] FileProcessor: Double Code Unit Creation Pattern
-- **Resolved:** 2026-02-27, commit 3153f0a
-- **Resolution:** Code unit IDs are generated upfront in FileProcessor, eliminating the double-creation pattern and deduplicating `buildCodeUnit` logic.
-
-#### [MED-003] Composition Root Contains In-Memory Repository Implementations
-- **Resolved:** 2026-02-27, commit 3153f0a
-- **Resolution:** Replaced inline in-memory repositories with SQLite repositories from the storage adapter layer.
-
-#### [LOW-001] SqliteCodeUnitRepository: Children Not Persisted
-- **Resolved:** 2026-02-27, commit 3153f0a
-- **Resolution:** Children are now persisted and reconstructed using `parent_unit_id`, with top-level filtering on list queries.
-
----
-
 ## Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 20 |
+| Total Active | 16 |
 | Critical | 0 |
 | High | 0 |
-| Medium | 6 |
-| Low | 14 |
-| Resolved This Month | 15 |
+| Medium | 5 |
+| Low | 11 |
+| Resolved This Commit | 5 (LOW-006, LOW-011, LOW-012, LOW-014, MED-004) |
