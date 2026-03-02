@@ -99,6 +99,12 @@ After linking, you can use `heury` directly instead of the full path:
 }
 ```
 
+## Adding agent rules
+
+For agents to use heury's MCP tools effectively, they need rules that describe the available tools and when to use them. Copy the rule content from [RULES.md](RULES.md) into your agent's rules file (the location depends on your tool — consult its documentation for where agent rules or system prompts are configured).
+
+Without these rules, agents may not discover or prioritize heury tools over raw file reads.
+
 ## Analyzing a project
 
 Before the MCP tools return useful data, you need to run analysis on your project:

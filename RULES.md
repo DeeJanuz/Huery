@@ -1,17 +1,8 @@
 # Heury — Agent Rules
 
-Copy the content below into a rules file for your CLI tool so that your agent knows how to use heury's MCP tools effectively.
+Copy the content below into your agent's rules file so that it knows how to use heury's MCP tools effectively. Where rules live depends on your tool — consult its documentation for where to place agent rules or system prompts.
 
-**Where to put it:**
-
-- **Claude Code**: `~/.claude/rules/heury.md` (global) or `your-project/.claude/rules/heury.md` (per-project)
-- **Cursor**: `your-project/.cursor/rules/heury.mdc`
-
----
-
-## Rule content
-
-Copy everything below this line into your rules file:
+Copy everything below the line into your rules file:
 
 ---
 
