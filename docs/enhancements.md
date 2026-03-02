@@ -1,7 +1,7 @@
 # Technical Debt & Enhancement Log
 
 **Last Updated:** 2026-03-02
-**Total Active Issues:** 14
+**Total Active Issues:** 13
 
 ---
 
@@ -38,12 +38,12 @@
 - **Resolution:** Extracted `runManifestGeneration` helper in `analyze.ts` that both full and incremental paths call. Duplicated manifest generation block eliminated.
 - **Resolved:** 2026-03-02, commit fc12ce2
 
-#### [MED-005] schema-model-extractor.ts at 507 Lines with Four Framework Parsers (Growing SRP)
+#### ~~[MED-005] schema-model-extractor.ts at 507 Lines with Four Framework Parsers (Growing SRP -- RESOLVED)~~
 - **File:** `src/extraction/schema-model-extractor.ts`
 - **Principle:** SRP, OCP
-- **Description:** This single file contains detection logic and field parsing for Prisma, TypeORM, Mongoose, and Drizzle -- four distinct ORM frameworks. At 507 lines it is the largest new extractor. Adding a fifth framework (e.g., Sequelize, MikroORM) requires modifying the `extractSchemaModels` orchestrator function and adding another block of code to this file. The pattern `if (hasX) extractX()` is a mild type-switch on framework.
-- **Suggested Fix:** Extract each framework parser into its own module (e.g., `prisma-schema-parser.ts`) behind a shared `SchemaParser` interface with a `canHandle(content, filePath): boolean` method. The orchestrator loops over registered parsers, achieving OCP. Not urgent while only 4 frameworks exist, but the file is already large enough to warrant monitoring.
+- **Resolution:** Defined `SchemaParser` interface (`canParse`/`parse` methods) in `src/extraction/schema-parsers/schema-parser.ts`. Extracted `PrismaSchemaParser`, `TypeOrmSchemaParser`, `MongooseSchemaParser`, and `DrizzleSchemaParser` into dedicated files under `src/extraction/schema-parsers/`. Moved shared `isLineCommented` and `extractBracedBlock` utilities to `extraction-utils.ts`. Orchestrator reduced from ~508 to ~80 lines, iterating over a registered parsers array. Adding a new framework now requires only creating a new `SchemaParser` class and registering it (OCP).
 - **Detected:** 2026-02-28, commit f749d47
+- **Resolved:** 2026-03-02, commit e4ffba3
 
 #### [MED-006] McpServerDependencies Still Growing at 14 Members (SRP -- Partially Resolved)
 - **File:** `src/adapters/mcp/server.ts`
@@ -161,9 +161,9 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Active | 14 |
+| Total Active | 13 |
 | Critical | 0 |
 | High | 0 |
-| Medium | 5 |
+| Medium | 4 |
 | Low | 9 |
-| Resolved This Commit | 2 (LOW-008, LOW-010) |
+| Resolved This Cycle | 1 (MED-005) |
