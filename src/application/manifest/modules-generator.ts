@@ -3,6 +3,14 @@ import type { CodeUnit, RepositoryFileCluster, RepositoryFileClusterMember } fro
 import { CodeUnitType, PatternType } from '@/domain/models/index.js';
 import { estimateTokens, fitSections, type Section } from './token-budgeter.js';
 
+export interface ModulesGeneratorDeps {
+  readonly codeUnitRepo: ICodeUnitRepository;
+  readonly dependencyRepo: IFileDependencyRepository;
+  readonly maxTokens: number;
+  readonly typeFieldRepo?: ITypeFieldRepository;
+  readonly fileClusterRepo?: IFileClusterRepository;
+}
+
 const SCORED_PATTERN_TYPES = new Set<string>([
   PatternType.API_ENDPOINT,
   PatternType.DATABASE_READ,
@@ -19,13 +27,8 @@ const MAX_CLUSTER_PATTERNS = 5;
  * Groups code units by file path, scored by relevance and fitted to budget.
  * Optionally appends a Feature Areas section from file clusters.
  */
-export function generateModulesManifest(
-  codeUnitRepo: ICodeUnitRepository,
-  dependencyRepo: IFileDependencyRepository,
-  maxTokens: number,
-  typeFieldRepo?: ITypeFieldRepository,
-  fileClusterRepo?: IFileClusterRepository,
-): string {
+export function generateModulesManifest(deps: ModulesGeneratorDeps): string {
+  const { codeUnitRepo, dependencyRepo, maxTokens, typeFieldRepo, fileClusterRepo } = deps;
   const allUnits = codeUnitRepo.findAll();
   const fileGroups = groupByFilePath(allUnits);
 

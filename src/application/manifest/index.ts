@@ -4,8 +4,8 @@ export {
   truncateToTokenBudget,
   type TokenBudget,
 } from './token-budgeter.js';
-export { generateModulesManifest } from './modules-generator.js';
-export { generatePatternsManifest } from './patterns-generator.js';
+export { generateModulesManifest, type ModulesGeneratorDeps } from './modules-generator.js';
+export { generatePatternsManifest, type PatternsGeneratorDeps } from './patterns-generator.js';
 export { generateDependenciesManifest } from './dependencies-generator.js';
 export { generateHotspotsManifest } from './hotspots-generator.js';
 export { generateSchemaManifest } from './schema-generator.js';

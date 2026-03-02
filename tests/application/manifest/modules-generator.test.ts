@@ -55,7 +55,7 @@ describe('generateModulesManifest', () => {
       }),
     );
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('# Modules');
     expect(result).toContain('## src/auth/login.ts');
@@ -90,7 +90,7 @@ describe('generateModulesManifest', () => {
       }),
     );
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('formatDate');
     expect(result).toContain('function');
@@ -129,7 +129,7 @@ describe('generateModulesManifest', () => {
     repo.save(classUnit);
     repo.save(methodUnit);
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('`UserService` - class');
     expect(result).toContain('`getUser`');
@@ -160,14 +160,14 @@ describe('generateModulesManifest', () => {
       }),
     );
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('`UserID` - type');
     expect(result).toContain('string | number');
   });
 
   it('should handle empty repository', () => {
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('# Modules');
     expect(result.split('\n').filter((l) => l.trim()).length).toBeLessThanOrEqual(2);
@@ -200,7 +200,7 @@ describe('generateModulesManifest', () => {
     });
     repo.save(unit);
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('API_ENDPOINT');
     expect(result).toContain('DATABASE_READ');
@@ -222,7 +222,7 @@ describe('generateModulesManifest', () => {
       }),
     );
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain(
       '`fetchUser` - async function(userId: string): Promise<User>, complexity: 5',
@@ -245,7 +245,7 @@ describe('generateModulesManifest', () => {
       }),
     );
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('`internalHelper` - function, complexity: 2');
     expect(result).not.toContain('(x: number): number');
@@ -266,7 +266,7 @@ describe('generateModulesManifest', () => {
       }),
     );
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result).toContain('`AppConfig` - class');
     expect(result).not.toContain('undefined');
@@ -290,7 +290,7 @@ describe('generateModulesManifest', () => {
       );
     }
 
-    const result = generateModulesManifest(repo, depRepo, 50); // very small budget
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 50 }); // very small budget
     // Result should be truncated
     expect(result.length).toBeLessThan(300); // 50 tokens * ~4 chars + some buffer
   });
@@ -339,7 +339,7 @@ describe('generateModulesManifest', () => {
       );
     }
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     // a-high.ts (score 16) should appear before z-low.ts (score 3)
     // despite z-low coming first alphabetically
@@ -387,7 +387,7 @@ describe('generateModulesManifest', () => {
       );
     }
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     // shared/utils.ts (score: 3 export + 5 fan-in = 8) should appear
     // before a-leaf.ts (score: 3 export + 0 fan-in = 3)
@@ -425,7 +425,7 @@ describe('generateModulesManifest', () => {
       }),
     );
 
-    const result = generateModulesManifest(repo, depRepo, 5000);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     // z-complex.ts (score: 3 export + 1 complexity = 4) should appear
     // before a-simple.ts (score: 3 export + 0 complexity = 3)
@@ -450,7 +450,7 @@ describe('generateModulesManifest', () => {
     }
 
     // Budget small enough that not all 10 files fit
-    const result = generateModulesManifest(repo, depRepo, 30);
+    const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 30 });
 
     expect(result).toContain('more files available via MCP tools');
   });
@@ -474,8 +474,8 @@ describe('generateModulesManifest', () => {
       );
     }
 
-    const result1 = generateModulesManifest(repo, depRepo, 5000);
-    const result2 = generateModulesManifest(repo, depRepo, 5000);
+    const result1 = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
+    const result2 = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
     expect(result1).toBe(result2);
   });
@@ -545,7 +545,7 @@ describe('generateModulesManifest', () => {
         }),
       );
 
-      const result = generateModulesManifest(repo, depRepo, 5000, typeFieldRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, typeFieldRepo });
 
       expect(result).toContain('`User` - interface');
       expect(result).toContain('  - id: string');
@@ -582,7 +582,7 @@ describe('generateModulesManifest', () => {
         }),
       );
 
-      const result = generateModulesManifest(repo, depRepo, 5000, typeFieldRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, typeFieldRepo });
 
       expect(result).toContain('`AppConfig` - class');
       expect(result).toContain('  - port: number');
@@ -616,7 +616,7 @@ describe('generateModulesManifest', () => {
         }),
       );
 
-      const result = generateModulesManifest(repo, depRepo, 5000, typeFieldRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, typeFieldRepo });
 
       expect(result).toContain('`Options` - type');
       expect(result).toContain('  - verbose?: boolean (optional)');
@@ -652,7 +652,7 @@ describe('generateModulesManifest', () => {
         }),
       );
 
-      const result = generateModulesManifest(repo, depRepo, 5000, typeFieldRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, typeFieldRepo });
 
       expect(result).toContain('`doWork` - function');
       expect(result).not.toContain('strayField');
@@ -674,7 +674,7 @@ describe('generateModulesManifest', () => {
         }),
       );
 
-      const result = generateModulesManifest(repo, depRepo, 5000);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
       expect(result).toContain('`MyInterface` - interface');
       // No type fields should appear since no repo was provided
@@ -708,7 +708,7 @@ describe('generateModulesManifest', () => {
         }),
       );
 
-      const result = generateModulesManifest(repo, depRepo, 5000, typeFieldRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, typeFieldRepo });
 
       const unitLine = result.split('\n').find((l) => l.includes('TestType'));
       const fieldLine = result.split('\n').find((l) => l.includes('value: number'));
@@ -740,7 +740,7 @@ describe('generateModulesManifest', () => {
         createFileClusterMember({ clusterId: 'cluster-1', filePath: 'src/api/handler.ts', isEntryPoint: false }),
       ]);
 
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       expect(result).toContain('## Feature Areas (Import Graph Clusters)');
       expect(result).toContain('### api');
@@ -760,7 +760,7 @@ describe('generateModulesManifest', () => {
         createFileClusterMember({ clusterId: 'cluster-1', filePath: 'src/storage/cache.ts', isEntryPoint: false }),
       ]);
 
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       expect(result).toContain('### storage (cohesion: 0.92, 3 files)');
     });
@@ -779,7 +779,7 @@ describe('generateModulesManifest', () => {
         createFileClusterMember({ clusterId: 'cluster-1', filePath: 'src/api/handler.ts', isEntryPoint: false }),
       ]);
 
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       expect(result).toContain('Entry points: src/api/router.ts, src/api/middleware.ts');
     });
@@ -812,7 +812,7 @@ describe('generateModulesManifest', () => {
         createFileClusterMember({ clusterId: 'cluster-large', filePath: 'src/api/e.ts', isEntryPoint: false }),
       ]);
 
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       expect(result.indexOf('### api')).toBeLessThan(result.indexOf('### utils'));
     });
@@ -884,7 +884,7 @@ describe('generateModulesManifest', () => {
         createFileClusterMember({ clusterId: 'cluster-api', filePath: 'src/api/handler.ts', isEntryPoint: false }),
       ]);
 
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       expect(result).toContain('Top patterns: API_ENDPOINT (2), DATABASE_WRITE (1), EXTERNAL_SERVICE (1)');
     });
@@ -930,7 +930,7 @@ describe('generateModulesManifest', () => {
         createFileClusterMember({ clusterId: 'cluster-big', filePath: 'src/big/file.ts', isEntryPoint: true }),
       ]);
 
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       // Count pattern entries in the Top patterns line
       const clusterSection = result.substring(result.indexOf('### big'));
@@ -942,13 +942,13 @@ describe('generateModulesManifest', () => {
     });
 
     it('should not show Feature Areas section when fileClusterRepo is not provided', () => {
-      const result = generateModulesManifest(repo, depRepo, 5000);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000 });
 
       expect(result).not.toContain('Feature Areas');
     });
 
     it('should not show Feature Areas section when no clusters exist', () => {
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       expect(result).not.toContain('Feature Areas');
     });
@@ -977,7 +977,7 @@ describe('generateModulesManifest', () => {
       }
 
       // Very small budget — not all clusters can fit
-      const result = generateModulesManifest(repo, depRepo, 50, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 50, fileClusterRepo: clusterRepo });
 
       // Result should be bounded
       expect(result.length).toBeLessThan(300);
@@ -1009,7 +1009,7 @@ describe('generateModulesManifest', () => {
         createFileClusterMember({ clusterId: 'cluster-clean', filePath: 'src/clean/index.ts', isEntryPoint: true }),
       ]);
 
-      const result = generateModulesManifest(repo, depRepo, 5000, undefined, clusterRepo);
+      const result = generateModulesManifest({ codeUnitRepo: repo, dependencyRepo: depRepo, maxTokens: 5000, fileClusterRepo: clusterRepo });
 
       expect(result).toContain('### clean');
       // The cluster section should not have a Top patterns line

@@ -71,7 +71,7 @@ describe('generatePatternsManifest', () => {
       }),
     );
 
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
     expect(result).toContain('# Patterns');
     expect(result).toContain('API Endpoints');
@@ -106,7 +106,7 @@ describe('generatePatternsManifest', () => {
       }),
     );
 
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
     expect(result).toContain('GET /api/users');
     expect(result).toContain('POST /api/users');
@@ -137,7 +137,7 @@ describe('generatePatternsManifest', () => {
       }),
     );
 
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
     expect(result).toContain('Database');
     expect(result).toContain('prisma.user.create');
@@ -160,7 +160,7 @@ describe('generatePatternsManifest', () => {
       }),
     );
 
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
     expect(result).toContain('Environment Variables');
     expect(result).toContain('DATABASE_URL');
@@ -169,7 +169,7 @@ describe('generatePatternsManifest', () => {
   });
 
   it('should handle no patterns', () => {
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
     expect(result).toContain('# Patterns');
   });
@@ -199,7 +199,7 @@ describe('generatePatternsManifest', () => {
       );
     }
 
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 50);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 50 });
     expect(result.length).toBeLessThan(300);
   });
 
@@ -256,7 +256,7 @@ describe('generatePatternsManifest', () => {
     // External Services section has 5 entries (score=5, ~74 tokens), API Endpoints has 1 (score=1, ~16 tokens)
     // Header is ~3 tokens. Budget of 85 fits header + External Services (77) but not both (93).
     // External Services should be included first due to higher score.
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 85);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 85 });
 
     expect(result).toContain('External Services');
     expect(result).not.toContain('API Endpoints');
@@ -289,7 +289,7 @@ describe('generatePatternsManifest', () => {
     }
 
     // Budget too small for all 10 entries but large enough for the header
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 20);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 20 });
 
     // Either the entire API Endpoints section is present or none of it is
     if (result.includes('## API Endpoints')) {
@@ -331,7 +331,7 @@ describe('generatePatternsManifest', () => {
       );
     }
 
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 20);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 20 });
 
     expect(result).toContain('more files available via MCP tools');
   });
@@ -387,7 +387,7 @@ describe('generatePatternsManifest', () => {
       }),
     );
 
-    const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+    const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
     expect(result).toContain('# Patterns');
     expect(result).toContain('## API Endpoints');
@@ -455,7 +455,7 @@ describe('generatePatternsManifest', () => {
         }),
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, eventFlowRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, eventFlowRepo });
 
       expect(result).toContain('## Event Flows');
       expect(result).toContain('### Emitters');
@@ -490,7 +490,7 @@ describe('generatePatternsManifest', () => {
         }),
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, eventFlowRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, eventFlowRepo });
 
       expect(result).toContain('### Emitters');
       expect(result).toContain('`order-placed` (socket.io) - src/services/order.ts:placeOrder');
@@ -498,7 +498,7 @@ describe('generatePatternsManifest', () => {
     });
 
     it('should not show event flows section when eventFlowRepo has no data', () => {
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, eventFlowRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, eventFlowRepo });
 
       expect(result).not.toContain('Event Flows');
     });
@@ -526,7 +526,7 @@ describe('generatePatternsManifest', () => {
         }),
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
       expect(result).toContain('# Patterns');
       expect(result).toContain('## API Endpoints');
@@ -544,7 +544,7 @@ describe('generatePatternsManifest', () => {
         }),
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, eventFlowRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, eventFlowRepo });
 
       // Should not crash; the event flow with unknown unit should be skipped or handled gracefully
       expect(result).toContain('# Patterns');
@@ -593,7 +593,7 @@ describe('generatePatternsManifest', () => {
         ],
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, undefined, patternTemplateRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, patternTemplateRepo });
 
       expect(result).toContain('## Conventions (Recurring Pattern Combinations)');
       expect(result).toContain('Api Endpoint with Database Write');
@@ -661,7 +661,7 @@ describe('generatePatternsManifest', () => {
         [],
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, undefined, patternTemplateRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, patternTemplateRepo });
 
       const largeIdx = result.indexOf('Api Endpoint with Database Write');
       const smallIdx = result.indexOf('Middleware with Authentication');
@@ -700,7 +700,7 @@ describe('generatePatternsManifest', () => {
         [],
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, undefined, patternTemplateRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, patternTemplateRepo });
 
       expect(result).toContain('### Order Processing Pipeline (3 implementations)');
       expect(result).toContain('Template: src/services/order.ts (lines 20-80)');
@@ -740,7 +740,7 @@ describe('generatePatternsManifest', () => {
         [],
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, undefined, patternTemplateRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, patternTemplateRepo });
 
       expect(result).toContain('- Validates input schema');
       expect(result).toContain('- Returns 201 on success');
@@ -748,13 +748,13 @@ describe('generatePatternsManifest', () => {
     });
 
     it('should not show conventions section when patternTemplateRepo is not provided', () => {
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000 });
 
       expect(result).not.toContain('Conventions');
     });
 
     it('should not show conventions section when no templates exist', () => {
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, undefined, patternTemplateRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, patternTemplateRepo });
 
       expect(result).not.toContain('Conventions');
     });
@@ -797,7 +797,7 @@ describe('generatePatternsManifest', () => {
       }
 
       // Use a tiny budget that won't fit the conventions section
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 15, undefined, patternTemplateRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 15, patternTemplateRepo });
 
       // The header takes some budget; conventions should not blow past the limit
       expect(result).toContain('# Patterns');
@@ -821,7 +821,7 @@ describe('generatePatternsManifest', () => {
         [],
       );
 
-      const result = generatePatternsManifest(codeUnitRepo, envVarRepo, 5000, undefined, patternTemplateRepo);
+      const result = generatePatternsManifest({ codeUnitRepo, envVarRepo, maxTokens: 5000, patternTemplateRepo });
 
       expect(result).toContain('### Orphan Template (3 implementations)');
       expect(result).toContain('Template: src/orphan/handler.ts');

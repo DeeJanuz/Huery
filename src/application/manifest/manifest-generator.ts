@@ -52,20 +52,20 @@ export async function generateManifests(
   // Ensure output directory exists
   await deps.fileSystem.mkdir(outputDir);
 
-  const modules = generateModulesManifest(
-    deps.codeUnitRepo,
-    deps.dependencyRepo,
-    budget.modules,
-    deps.typeFieldRepo,
-    deps.fileClusterRepo,
-  );
-  const patterns = generatePatternsManifest(
-    deps.codeUnitRepo,
-    deps.envVarRepo,
-    budget.patterns,
-    deps.eventFlowRepo,
-    deps.patternTemplateRepo,
-  );
+  const modules = generateModulesManifest({
+    codeUnitRepo: deps.codeUnitRepo,
+    dependencyRepo: deps.dependencyRepo,
+    maxTokens: budget.modules,
+    typeFieldRepo: deps.typeFieldRepo,
+    fileClusterRepo: deps.fileClusterRepo,
+  });
+  const patterns = generatePatternsManifest({
+    codeUnitRepo: deps.codeUnitRepo,
+    envVarRepo: deps.envVarRepo,
+    maxTokens: budget.patterns,
+    eventFlowRepo: deps.eventFlowRepo,
+    patternTemplateRepo: deps.patternTemplateRepo,
+  });
   const dependencies = generateDependenciesManifest(
     deps.dependencyRepo,
     budget.dependencies,

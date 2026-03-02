@@ -9,17 +9,20 @@ interface PatternEntry {
   readonly functionName: string;
 }
 
+export interface PatternsGeneratorDeps {
+  readonly codeUnitRepo: ICodeUnitRepository;
+  readonly envVarRepo: IEnvVariableRepository;
+  readonly maxTokens: number;
+  readonly eventFlowRepo?: IEventFlowRepository;
+  readonly patternTemplateRepo?: IPatternTemplateRepository;
+}
+
 /**
  * Generate PATTERNS.md - all detected patterns grouped by type.
  * Optionally appends a Conventions section from pattern templates.
  */
-export function generatePatternsManifest(
-  codeUnitRepo: ICodeUnitRepository,
-  envVarRepo: IEnvVariableRepository,
-  maxTokens: number,
-  eventFlowRepo?: IEventFlowRepository,
-  patternTemplateRepo?: IPatternTemplateRepository,
-): string {
+export function generatePatternsManifest(deps: PatternsGeneratorDeps): string {
+  const { codeUnitRepo, envVarRepo, maxTokens, eventFlowRepo, patternTemplateRepo } = deps;
   const allUnits = codeUnitRepo.findAll();
   const patternsByType = groupPatternsByType(allUnits);
   const envVars = envVarRepo.findAll();
