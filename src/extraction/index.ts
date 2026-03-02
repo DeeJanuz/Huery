@@ -79,3 +79,16 @@ export {
   extractObjectKeys,
   type ColumnAccess,
 } from './column-extractor.js';
+
+// Schema model extraction
+export {
+  extractSchemaModels,
+  type ExtractedSchemaModel,
+  type ExtractedSchemaModelField,
+} from './schema-model-extractor.js';
+
+export type { SchemaParser } from './schema-parsers/index.js';
+export { PrismaSchemaParser } from './schema-parsers/prisma-schema-parser.js';
+export { TypeOrmSchemaParser } from './schema-parsers/typeorm-schema-parser.js';
+export { MongooseSchemaParser } from './schema-parsers/mongoose-schema-parser.js';
+export { DrizzleSchemaParser } from './schema-parsers/drizzle-schema-parser.js';
