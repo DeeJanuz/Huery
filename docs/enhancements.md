@@ -161,6 +161,14 @@
 
 ## Resolved Issues
 
+#### [MED-011] ui.ts Mixes Process Management Utilities with CLI Command (SRP)
+- **Resolved:** 2026-03-02
+- **Resolution:** Extracted `killProcessOnPort`, `isPortInUse`, and `waitForExit` into `src/cli/utils/port-manager.ts` with a `ProcessDiscovery` strategy interface for platform abstraction and testability. Default implementation uses `lsof`/`process.kill`. The `ui.ts` command now imports from the extracted module.
+
+#### [LOW-023] killProcessOnPort and Related Functions Have No Test Coverage
+- **Resolved:** 2026-03-02
+- **Resolution:** Added 7 tests in `tests/cli/utils/port-manager.test.ts` covering: port free, findPidOnPort returns null, SIGTERM succeeds, SIGTERM timeout requiring SIGKILL, SIGTERM throws (invalid PID), and `isPortInUse` with actual `net.createServer` (port occupied and port free). Tests use `ProcessDiscovery` interface for injection rather than mocking globals.
+
 #### [HIGH-001] UI Feature Has Zero Test Coverage (3300+ Lines Untested)
 - **Resolved:** 2026-03-01, commit 77e5c75
 - **Resolution:** Added 62 tests across 8 test files covering all 7 backend route factories, `wrapHandler` utility, `cluster-detail` module, and shared test helpers. Remaining frontend coverage (useApi hook, parseRoute, React components) tracked as MED-009.
@@ -224,4 +232,4 @@
 | High | 0 |
 | Medium | 6 |
 | Low | 14 |
-| Resolved This Month | 13 |
+| Resolved This Month | 15 |

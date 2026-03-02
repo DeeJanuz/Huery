@@ -2,91 +2,12 @@
  * CLI ui command - starts the UI viewer server.
  */
 
-import net from 'node:net';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
 import type { IFileSystem } from '@/domain/ports/index.js';
 import { NodeFileSystem } from '@/adapters/filesystem/node-filesystem.js';
 import { createCompositionRoot } from '@/composition-root.js';
 import { createUiServer } from '@/adapters/ui/server.js';
-
-/**
- * Check if a port is in use and kill the process using it.
- * Returns true if a process was killed, false if port was free.
- */
-export async function killProcessOnPort(port: number): Promise<boolean> {
-  const inUse = await isPortInUse(port);
-  if (!inUse) {
-    return false;
-  }
-
-  let pid: string;
-  try {
-    pid = execSync(`lsof -ti :${port}`, { encoding: 'utf-8' }).trim();
-  } catch {
-    // lsof failed — port may have been released
-    return false;
-  }
-
-  if (!pid) {
-    return false;
-  }
-
-  const numericPid = Number(pid.split('\n')[0]);
-  if (isNaN(numericPid)) {
-    return false;
-  }
-
-  console.log(`Stopping existing heury ui on port ${port} (PID ${numericPid})...`);
-
-  try {
-    process.kill(numericPid, 'SIGTERM');
-  } catch {
-    return false;
-  }
-
-  // Wait up to 2s for process to exit, then SIGKILL
-  const exited = await waitForExit(numericPid, 2000);
-  if (!exited) {
-    try {
-      process.kill(numericPid, 'SIGKILL');
-    } catch {
-      // Process may have already exited
-    }
-  }
-
-  return true;
-}
-
-function isPortInUse(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    server.once('error', () => resolve(true));
-    server.once('listening', () => {
-      server.close(() => resolve(false));
-    });
-    server.listen(port);
-  });
-}
-
-function waitForExit(pid: number, timeoutMs: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const check = (): void => {
-      try {
-        process.kill(pid, 0); // signal 0 = check if alive
-        if (Date.now() - start >= timeoutMs) {
-          resolve(false);
-        } else {
-          setTimeout(check, 100);
-        }
-      } catch {
-        resolve(true); // process no longer exists
-      }
-    };
-    check();
-  });
-}
+import { killProcessOnPort } from '@/cli/utils/port-manager.js';
 
 export async function uiCommand(
   options: { dir: string; port: string; host: string },
