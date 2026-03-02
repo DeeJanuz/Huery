@@ -23,10 +23,14 @@ program
 program
   .command('analyze')
   .description('Analyze the codebase')
+  .argument('[dir]', 'Project directory (default: current directory)')
   .option('-d, --dir <directory>', 'Project directory', '.')
   .option('--full', 'Force full re-analysis', false)
   .option('--incremental', 'Only analyze files changed in the last commit')
-  .action((options) => analyzeCommand(options));
+  .action((dir: string | undefined, options) => {
+    if (dir) options.dir = dir;
+    return analyzeCommand(options);
+  });
 
 const hook = program
   .command('hook')
