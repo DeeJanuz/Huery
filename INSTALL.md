@@ -47,8 +47,10 @@ You should see `0.1.0`.
 Link the package so the `heury` command is available anywhere:
 
 ```sh
-npm link
+sudo npm link
 ```
+Note: If an agent is following these instructions, unless you have access to sudo, you will likely need to give the user instructions on adding and removing the link manaually.
+
 
 After linking, you can run `heury` from any directory.
 
@@ -103,7 +105,7 @@ After linking, you can use `heury` directly instead of the full path:
 
 For agents to use heury's MCP tools effectively, they need rules that describe the available tools and when to use them. Copy the rule content from [RULES.md](RULES.md) into your agent's rules file (the location depends on your tool — consult its documentation for where agent rules or system prompts are configured).
 
-Without these rules, agents may not discover or prioritize heury tools over raw file reads.
+Without these rules, agents may not discover or prioritize heury tools where necessary..
 
 ## Analyzing a project
 
