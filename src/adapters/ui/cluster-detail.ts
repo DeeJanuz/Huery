@@ -25,8 +25,54 @@ export interface ClassifiedDependencies {
   externalDeps: Array<{ source: string; target: string; direction: 'inbound' | 'outbound' }>;
 }
 
+/** Extension fallback map: if a lookup with the original extension finds nothing, try these. */
+const EXTENSION_FALLBACKS: Record<string, string[]> = {
+  '.js': ['.ts'],
+  '.jsx': ['.tsx'],
+  '.ts': ['.js'],
+  '.tsx': ['.jsx'],
+};
+
+/** Extensions to try when the path has no extension at all. */
+const EXTENSIONLESS_FALLBACKS = ['.ts', '.tsx', '.js', '.jsx'];
+
+function findCodeUnitsWithFallback(
+  codeUnitRepo: ICodeUnitRepository,
+  filePath: string,
+): ReturnType<ICodeUnitRepository['findByFilePath']> {
+  const units = codeUnitRepo.findByFilePath(filePath);
+  if (units.length > 0) return units;
+
+  const lastDot = filePath.lastIndexOf('.');
+  const lastSlash = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
+  const hasExtension = lastDot > lastSlash && lastDot > 0;
+
+  if (hasExtension) {
+    const ext = filePath.slice(lastDot);
+    const base = filePath.slice(0, lastDot);
+    const fallbacks = EXTENSION_FALLBACKS[ext];
+    if (fallbacks) {
+      for (const altExt of fallbacks) {
+        const altUnits = codeUnitRepo.findByFilePath(base + altExt);
+        if (altUnits.length > 0) return altUnits;
+      }
+    }
+  } else {
+    for (const ext of EXTENSIONLESS_FALLBACKS) {
+      const altUnits = codeUnitRepo.findByFilePath(filePath + ext);
+      if (altUnits.length > 0) return altUnits;
+    }
+  }
+
+  return [];
+}
+
 /**
  * Collect code units for every file path in a cluster.
+ *
+ * Handles extension mismatches between dependency-graph paths (which may use
+ * `.js` extensions from TypeScript ESM imports) and code-unit storage paths
+ * (which use the actual source extension, e.g. `.ts`).
  */
 export function collectClusterCodeUnits(
   codeUnitRepo: ICodeUnitRepository,
@@ -35,7 +81,7 @@ export function collectClusterCodeUnits(
   const codeUnits: ClusterCodeUnit[] = [];
 
   for (const fp of filePaths) {
-    const units = codeUnitRepo.findByFilePath(fp);
+    const units = findCodeUnitsWithFallback(codeUnitRepo, fp);
     for (const unit of units) {
       codeUnits.push({
         id: unit.id,

@@ -99,6 +99,55 @@ describe('collectClusterCodeUnits', () => {
     ]);
   });
 
+  it('should resolve .js file paths to .ts when code units are stored under .ts', () => {
+    codeUnitRepo.save(createCodeUnit({
+      filePath: 'src/cli/commands/analyze.ts', name: 'runAnalyze', unitType: CodeUnitType.FUNCTION,
+      lineStart: 1, lineEnd: 20, isAsync: true, isExported: true, language: 'typescript',
+    }));
+
+    const result = collectClusterCodeUnits(codeUnitRepo, ['src/cli/commands/analyze.js']);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('runAnalyze');
+    expect(result[0].filePath).toBe('src/cli/commands/analyze.ts');
+  });
+
+  it('should resolve .jsx file paths to .tsx when code units are stored under .tsx', () => {
+    codeUnitRepo.save(createCodeUnit({
+      filePath: 'src/components/App.tsx', name: 'App', unitType: CodeUnitType.FUNCTION,
+      lineStart: 1, lineEnd: 30, isAsync: false, isExported: true, language: 'typescript',
+    }));
+
+    const result = collectClusterCodeUnits(codeUnitRepo, ['src/components/App.jsx']);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('App');
+    expect(result[0].filePath).toBe('src/components/App.tsx');
+  });
+
+  it('should not double-count when .ts path already returns results', () => {
+    codeUnitRepo.save(createCodeUnit({
+      filePath: 'src/a.ts', name: 'fnA', unitType: CodeUnitType.FUNCTION,
+      lineStart: 1, lineEnd: 10, isAsync: false, isExported: true, language: 'typescript',
+    }));
+
+    const result = collectClusterCodeUnits(codeUnitRepo, ['src/a.ts']);
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('should resolve extensionless paths by trying .ts, .tsx, .js, .jsx', () => {
+    codeUnitRepo.save(createCodeUnit({
+      filePath: 'src/utils/helper.ts', name: 'helper', unitType: CodeUnitType.FUNCTION,
+      lineStart: 1, lineEnd: 5, isAsync: false, isExported: true, language: 'typescript',
+    }));
+
+    const result = collectClusterCodeUnits(codeUnitRepo, ['src/utils/helper']);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('helper');
+  });
+
   it('should include all expected fields in the output', () => {
     codeUnitRepo.save(createCodeUnit({
       id: 'u1',
