@@ -159,6 +159,7 @@ export class AnalysisOrchestrator {
     filesWithErrors: number;
   }> {
     let filesProcessed = 0;
+    let filesSkipped = 0;
     let codeUnitsExtracted = 0;
     let patternsDetected = 0;
     let dependenciesFound = 0;
@@ -192,6 +193,7 @@ export class AnalysisOrchestrator {
           }));
         }
         envVariablesFound += envVars.length;
+        filesSkipped++;
         continue;
       }
 
@@ -208,6 +210,7 @@ export class AnalysisOrchestrator {
             // Ignore read errors — schema extraction is best-effort
           }
         }
+        filesSkipped++;
         continue;
       }
 
@@ -243,6 +246,7 @@ export class AnalysisOrchestrator {
               phase: 'analyzing',
               filesProcessed,
               totalFiles,
+              filesSkipped,
               codeUnitsExtracted,
               patternsDetected,
               dependenciesFound,
@@ -263,6 +267,7 @@ export class AnalysisOrchestrator {
         phase: 'analyzing',
         filesProcessed,
         totalFiles,
+        filesSkipped,
         codeUnitsExtracted,
         patternsDetected,
         dependenciesFound,
@@ -271,15 +276,17 @@ export class AnalysisOrchestrator {
 
     // Run deep analysis if repositories are provided
     if (this.hasDeepAnalysisDeps()) {
-      const onStep = options.onProgress ? (stepName: string) => {
+      const onStep = options.onProgress ? (stepName: string, detail?: string) => {
         options.onProgress!({
           phase: 'deep-analysis',
           filesProcessed,
           totalFiles,
+          filesSkipped,
           codeUnitsExtracted,
           patternsDetected,
           dependenciesFound,
           deepAnalysisStep: stepName,
+          deepAnalysisProgress: detail,
         });
       } : undefined;
 

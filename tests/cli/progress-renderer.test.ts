@@ -8,6 +8,7 @@ function makeProgress(overrides: Partial<AnalysisProgress> = {}): AnalysisProgre
     phase: 'analyzing',
     filesProcessed: 10,
     totalFiles: 100,
+    filesSkipped: 0,
     codeUnitsExtracted: 50,
     patternsDetected: 20,
     dependenciesFound: 15,
@@ -28,15 +29,19 @@ describe('createProgressRenderer', () => {
       Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true });
     });
 
-    it('should render progress with file counts and percentage', () => {
+    it('should render scanning progress with accurate percentage', () => {
       const { onProgress } = createProgressRenderer();
 
-      onProgress(makeProgress({ filesProcessed: 42, totalFiles: 156 }));
+      onProgress(makeProgress({ filesProcessed: 42, totalFiles: 156, filesSkipped: 114 }));
 
       const output = writeSpy.mock.calls.map(c => c[0]).join('');
       expect(output).toContain('Analyzing codebase...');
-      expect(output).toContain('42/156');
-      expect(output).toContain('27%');
+      expect(output).toContain('Scanning:');
+      expect(output).toContain('156/156');
+      expect(output).toContain('100%');
+      expect(output).toContain('Code files:');
+      expect(output).toContain('42');
+      expect(output).toContain('114 non-source skipped');
     });
 
     it('should render code units, patterns, and dependencies', () => {
@@ -74,6 +79,33 @@ describe('createProgressRenderer', () => {
       const output = writeSpy.mock.calls.map(c => c[0]).join('');
       expect(output).toContain('Deep analysis...');
       expect(output).toContain('file clustering');
+    });
+
+    it('should render deepAnalysisProgress after step name', () => {
+      const { onProgress } = createProgressRenderer();
+
+      onProgress(makeProgress({
+        phase: 'deep-analysis',
+        deepAnalysisStep: 'function calls & type fields',
+        deepAnalysisProgress: '42/100',
+      }));
+
+      const output = writeSpy.mock.calls.map(c => c[0]).join('');
+      expect(output).toContain('function calls & type fields (42/100)');
+    });
+
+    it('should render step name without parenthetical when no deepAnalysisProgress', () => {
+      const { onProgress } = createProgressRenderer();
+
+      onProgress(makeProgress({
+        phase: 'deep-analysis',
+        deepAnalysisStep: 'schema models',
+      }));
+
+      const output = writeSpy.mock.calls.map(c => c[0]).join('');
+      // Step line should contain the step name without a progress detail
+      expect(output).toContain('Step:          schema models');
+      expect(output).not.toContain('schema models (');
     });
 
     it('should render manifests phase', () => {

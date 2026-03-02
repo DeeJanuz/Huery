@@ -70,9 +70,9 @@ describe('AnalysisProgress callback', () => {
     const analyzingUpdates = progressUpdates.filter(p => p.phase === 'analyzing');
     expect(analyzingUpdates.length).toBeGreaterThan(0);
 
-    // The final analyzing update should have filesProcessed = totalFiles
+    // The final analyzing update should have filesProcessed + filesSkipped = totalFiles
     const lastAnalyzing = analyzingUpdates[analyzingUpdates.length - 1];
-    expect(lastAnalyzing.filesProcessed).toBe(lastAnalyzing.totalFiles);
+    expect(lastAnalyzing.filesProcessed + lastAnalyzing.filesSkipped).toBe(lastAnalyzing.totalFiles);
   });
 
   it('should always emit the final state after loop completes', async () => {
@@ -89,7 +89,30 @@ describe('AnalysisProgress callback', () => {
 
     const analyzingUpdates = progressUpdates.filter(p => p.phase === 'analyzing');
     const lastUpdate = analyzingUpdates[analyzingUpdates.length - 1];
-    expect(lastUpdate.filesProcessed).toBe(lastUpdate.totalFiles);
+    expect(lastUpdate.filesProcessed + lastUpdate.filesSkipped).toBe(lastUpdate.totalFiles);
+  });
+
+  it('should include filesSkipped count for non-code files', async () => {
+    await fs.writeFile('/project/a.ts', 'export function a() {}');
+    await fs.writeFile('/project/readme.md', '# Hello');
+    await fs.writeFile('/project/image.png', 'binary');
+    await fs.writeFile('/project/config.json', '{}');
+
+    const deps = createDeps(fs);
+    const orchestrator = new AnalysisOrchestrator(deps);
+    const progressUpdates: AnalysisProgress[] = [];
+
+    await orchestrator.analyze({
+      rootDir: '/project',
+      onProgress: (p) => progressUpdates.push({ ...p }),
+    });
+
+    const analyzingUpdates = progressUpdates.filter(p => p.phase === 'analyzing');
+    const lastUpdate = analyzingUpdates[analyzingUpdates.length - 1];
+    // 1 code file processed, 3 non-code files skipped
+    expect(lastUpdate.filesProcessed).toBe(1);
+    expect(lastUpdate.filesSkipped).toBe(3);
+    expect(lastUpdate.totalFiles).toBe(4);
   });
 
   it('should include codeUnitsExtracted count in progress', async () => {
@@ -149,6 +172,36 @@ describe('AnalysisProgress callback', () => {
       expect(p.deepAnalysisStep).toBeDefined();
       expect(typeof p.deepAnalysisStep).toBe('string');
     }
+  });
+
+  it('should include deepAnalysisProgress detail in block 1 updates', async () => {
+    // Create multiple files so the per-file loop has work to do
+    for (let i = 0; i < 5; i++) {
+      await fs.writeFile(`/project/file${i}.ts`, `export function fn${i}() { console.log(${i}); }`);
+    }
+
+    const deps = createDeps(fs);
+    const orchestrator = new AnalysisOrchestrator(deps);
+    const progressUpdates: AnalysisProgress[] = [];
+
+    await orchestrator.analyze({
+      rootDir: '/project',
+      onProgress: (p) => progressUpdates.push({ ...p }),
+    });
+
+    const block1Updates = progressUpdates.filter(
+      p => p.phase === 'deep-analysis' && p.deepAnalysisStep === 'function calls & type fields'
+    );
+    expect(block1Updates.length).toBeGreaterThan(0);
+
+    // The final block 1 update should have deepAnalysisProgress showing all files done
+    const lastBlock1 = block1Updates[block1Updates.length - 1];
+    expect(lastBlock1.deepAnalysisProgress).toBeDefined();
+    expect(lastBlock1.deepAnalysisProgress).toMatch(/^\d+\/\d+$/);
+
+    // The denominator should match the number of files processed
+    const parts = lastBlock1.deepAnalysisProgress!.split('/');
+    expect(parts[0]).toBe(parts[1]); // final update: numerator == denominator
   });
 
   it('should not break analysis when no onProgress callback is provided', async () => {

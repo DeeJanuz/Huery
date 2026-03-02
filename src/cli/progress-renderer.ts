@@ -29,13 +29,18 @@ function renderTtyBlock(progress: AnalysisProgress): string {
   }
 
   if (progress.phase === 'deep-analysis' && progress.deepAnalysisStep) {
-    lines.push(`  Step:          ${progress.deepAnalysisStep}`);
+    const stepLine = progress.deepAnalysisProgress
+      ? `  Step:          ${progress.deepAnalysisStep} (${progress.deepAnalysisProgress})`
+      : `  Step:          ${progress.deepAnalysisStep}`;
+    lines.push(stepLine);
   }
 
+  const scanned = progress.filesProcessed + progress.filesSkipped;
   const pct = progress.totalFiles > 0
-    ? Math.round((progress.filesProcessed / progress.totalFiles) * 100)
+    ? Math.round((scanned / progress.totalFiles) * 100)
     : 0;
-  lines.push(`  Files:         ${progress.filesProcessed}/${progress.totalFiles} (${pct}%)`);
+  lines.push(`  Scanning:      ${scanned}/${progress.totalFiles} (${pct}%)`);
+  lines.push(`  Code files:    ${progress.filesProcessed} (${progress.filesSkipped} non-source skipped)`);
   lines.push(`  Code units:    ${progress.codeUnitsExtracted}`);
   lines.push(`  Patterns:      ${progress.patternsDetected}`);
   lines.push(`  Dependencies:  ${progress.dependenciesFound}`);

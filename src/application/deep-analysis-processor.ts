@@ -82,7 +82,7 @@ export function processDeepAnalysis(
   fileResults: FileProcessingResult[],
   fileContents: Map<string, string>,
   deps: DeepAnalysisDependencies,
-  onStep?: (stepName: string) => void,
+  onStep?: (stepName: string, detail?: string) => void,
 ): DeepAnalysisResult {
   let functionCallsExtracted = 0;
   let typeFieldsExtracted = 0;
@@ -92,7 +92,9 @@ export function processDeepAnalysis(
 
   // Process each file's code units
   onStep?.('function calls & type fields');
-  for (const fileResult of fileResults) {
+  let lastStepTime = Date.now();
+  for (let i = 0; i < fileResults.length; i++) {
+    const fileResult = fileResults[i];
     const allFunctionCalls: ReturnType<typeof createFunctionCall>[] = [];
     const allTypeFields: ReturnType<typeof createTypeField>[] = [];
     const allEventFlows: ReturnType<typeof createEventFlow>[] = [];
@@ -126,6 +128,19 @@ export function processDeepAnalysis(
       deps.guardClauseRepo.saveBatch(allGuardClauses);
       guardsExtracted += allGuardClauses.length;
     }
+
+    // Throttled progress within this block
+    if (onStep) {
+      const now = Date.now();
+      if (now - lastStepTime >= 80) {
+        lastStepTime = now;
+        onStep('function calls & type fields', `${i + 1}/${fileResults.length}`);
+      }
+    }
+  }
+  // Always emit final state for this block
+  if (fileResults.length > 0) {
+    onStep?.('function calls & type fields', `${fileResults.length}/${fileResults.length}`);
   }
 
   // Extract schema models from file contents
