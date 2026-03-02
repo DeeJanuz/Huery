@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +12,9 @@ export class DatabaseManager {
   private db: Database.Database;
 
   constructor(private readonly options: DatabaseOptions) {
+    if (!options.inMemory) {
+      mkdirSync(dirname(options.path), { recursive: true });
+    }
     this.db = new Database(options.inMemory ? ':memory:' : options.path);
   }
 
