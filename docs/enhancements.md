@@ -1,6 +1,6 @@
 # Technical Debt & Enhancement Log
 
-**Last Updated:** 2026-03-01
+**Last Updated:** 2026-03-02
 **Total Active Issues:** 20
 **Resolved This Month:** 13
 
@@ -96,9 +96,10 @@
 #### [LOW-009] deep-analysis-processor.ts processDeepAnalysis Accumulating Extraction Responsibilities
 - **File:** `src/application/deep-analysis-processor.ts`
 - **Principle:** SRP
-- **Description:** `processDeepAnalysis` now orchestrates 7 distinct extraction/computation tasks: function calls, type fields, event flows, schema models, guards, file clusters, and pattern templates. The `DeepAnalysisDependencies` interface has grown to 9 optional/required repos. Each new feature adds another `if (deps.xRepo)` block to the function body. The function is 239 lines and still manageable but is on a trajectory toward becoming a god function. The pattern template block (lines 196-228) follows the same structural pattern as the cluster block, suggesting an extraction opportunity.
+- **Description:** `processDeepAnalysis` now orchestrates 7 distinct extraction/computation tasks: function calls, type fields, event flows, schema models, guards, file clusters, and pattern templates. The `DeepAnalysisDependencies` interface has grown to 9 optional/required repos. Each new feature adds another `if (deps.xRepo)` block to the function body. The function also now accepts an optional `onStep` callback for progress reporting, which emits step names before each extraction phase. The function is ~250 lines and still manageable but is on a trajectory toward becoming a god function.
 - **Suggested Fix:** Consider extracting each post-processing step into a separate function or class behind a common `DeepAnalysisStep` interface with `canRun(deps): boolean` and `run(fileResults, fileContents, deps): StepResult`. The orchestrator iterates over registered steps. Not urgent since the current structure is readable, but monitor as more steps are added.
 - **Detected:** 2026-02-28, commit 6211e80
+- **Updated:** 2026-03-02, commit 0998681 (added `onStep` callback parameter for progress reporting)
 
 #### [LOW-008] generateModulesManifest Growing Parameter List (5 Positional Params)
 - **File:** `src/application/manifest/modules-generator.ts`

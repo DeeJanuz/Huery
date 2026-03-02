@@ -183,6 +183,36 @@ OPTIONS
 - filesWithErrors: number - Count of files that failed during processing
 - duration: number - Time in milliseconds
 
+### AnalysisOptions
+**Purpose:** Options passed to `AnalysisOrchestrator.analyze()` and `analyzeIncremental()`.
+
+**Properties:**
+- rootDir: string (readonly) - Root directory of the codebase to analyze
+- include: string[]? (readonly) - Glob patterns to include
+- exclude: string[]? (readonly) - Glob patterns to exclude
+- skipTests: boolean? (readonly) - Whether to skip test files
+- onProgress: ProgressCallback? (readonly) - Optional callback for live progress reporting
+
+### AnalysisProgress
+**Purpose:** Progress state emitted during analysis via the `onProgress` callback. Enables live terminal rendering of file counts, extracted metrics, and phase transitions.
+
+**Properties:**
+- phase: 'analyzing' | 'deep-analysis' | 'manifests' (readonly) - Current analysis phase
+- filesProcessed: number (readonly) - Number of files processed so far
+- totalFiles: number (readonly) - Total files to process
+- codeUnitsExtracted: number (readonly) - Running count of extracted code units
+- patternsDetected: number (readonly) - Running count of detected patterns
+- dependenciesFound: number (readonly) - Running count of found dependencies
+- currentFile: string? (readonly) - Basename of the file currently being processed
+- deepAnalysisStep: string? (readonly) - Name of the current deep analysis step (e.g., "file clustering", "callee resolution")
+
+**Location:** `src/application/analysis-progress.ts`
+
+### ProgressCallback
+**Purpose:** Type alias for the progress reporting function: `(progress: AnalysisProgress) => void`
+
+**Location:** `src/application/analysis-progress.ts`
+
 ---
 
 ## Complexity Models
