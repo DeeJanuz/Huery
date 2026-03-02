@@ -20,6 +20,32 @@ export interface AnalyzeOptions {
   inMemory?: boolean;
 }
 
+async function runManifestGeneration(
+  dependencies: AnalysisDependencies,
+  options: AnalyzeOptions,
+  config: HeuryConfig,
+  fs: IFileSystem,
+): Promise<void> {
+  await generateManifests(
+    {
+      codeUnitRepo: dependencies.codeUnitRepo,
+      dependencyRepo: dependencies.dependencyRepo,
+      envVarRepo: dependencies.envVarRepo,
+      fileSystem: fs,
+      typeFieldRepo: dependencies.typeFieldRepo,
+      eventFlowRepo: dependencies.eventFlowRepo,
+      schemaModelRepo: dependencies.schemaModelRepo,
+      functionCallRepo: dependencies.functionCallRepo,
+      fileClusterRepo: dependencies.fileClusterRepo,
+      patternTemplateRepo: dependencies.patternTemplateRepo,
+    },
+    {
+      outputDir: `${options.dir}/${config.outputDir}`,
+      totalTokenBudget: config.manifestTokenBudget,
+    },
+  );
+}
+
 export async function analyzeCommand(
   options: AnalyzeOptions,
   fileSystem?: IFileSystem,
@@ -58,24 +84,7 @@ export async function analyzeCommand(
         dependenciesFound: result.stats.dependenciesFound,
       });
 
-      await generateManifests(
-        {
-          codeUnitRepo: dependencies.codeUnitRepo,
-          dependencyRepo: dependencies.dependencyRepo,
-          envVarRepo: dependencies.envVarRepo,
-          fileSystem: fs,
-          typeFieldRepo: dependencies.typeFieldRepo,
-          eventFlowRepo: dependencies.eventFlowRepo,
-          schemaModelRepo: dependencies.schemaModelRepo,
-          functionCallRepo: dependencies.functionCallRepo,
-          fileClusterRepo: dependencies.fileClusterRepo,
-          patternTemplateRepo: dependencies.patternTemplateRepo,
-        },
-        {
-          outputDir: `${options.dir}/${config.outputDir}`,
-          totalTokenBudget: config.manifestTokenBudget,
-        },
-      );
+      await runManifestGeneration(dependencies, options, config, fs);
 
       progress.finish();
 
@@ -127,24 +136,7 @@ async function runIncrementalAnalysis(
       `Incremental analysis: ${result.filesAdded} added, ${result.filesModified} modified, ${result.filesDeleted} deleted`,
     );
 
-    await generateManifests(
-      {
-        codeUnitRepo: dependencies.codeUnitRepo,
-        dependencyRepo: dependencies.dependencyRepo,
-        envVarRepo: dependencies.envVarRepo,
-        fileSystem: fs,
-        typeFieldRepo: dependencies.typeFieldRepo,
-        eventFlowRepo: dependencies.eventFlowRepo,
-        schemaModelRepo: dependencies.schemaModelRepo,
-        functionCallRepo: dependencies.functionCallRepo,
-        fileClusterRepo: dependencies.fileClusterRepo,
-        patternTemplateRepo: dependencies.patternTemplateRepo,
-      },
-      {
-        outputDir: `${options.dir}/${config.outputDir}`,
-        totalTokenBudget: config.manifestTokenBudget,
-      },
-    );
+    await runManifestGeneration(dependencies, options, config, fs);
   } else {
     console.error(`Incremental analysis failed: ${result.error ?? 'Unknown error'}`);
   }

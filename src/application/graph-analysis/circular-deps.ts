@@ -1,4 +1,5 @@
 import type { FileDependency } from '@/domain/models/index.js';
+import { buildAdjacencyGraph } from '@/application/graph-analysis/graph-utils.js';
 
 export interface CircularDep {
   readonly cycle: string[];
@@ -19,36 +20,13 @@ export function detectCircularDeps(deps: FileDependency[]): CircularDep[] {
     return [];
   }
 
-  const adjacency = buildDirectedGraph(deps);
+  const adjacency = buildAdjacencyGraph(deps);
   const sccs = findStronglyConnectedComponents(adjacency);
   const cyclicSccs = sccs.filter(scc => isCyclic(scc, adjacency));
 
   return cyclicSccs
     .map(scc => buildCircularDep(scc, adjacency))
     .sort((a, b) => a.length - b.length);
-}
-
-function buildDirectedGraph(deps: FileDependency[]): Map<string, Set<string>> {
-  const graph = new Map<string, Set<string>>();
-  const seen = new Set<string>();
-
-  for (const d of deps) {
-    const key = `${d.sourceFile}->${d.targetFile}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-
-    if (!graph.has(d.sourceFile)) {
-      graph.set(d.sourceFile, new Set());
-    }
-    if (!graph.has(d.targetFile)) {
-      graph.set(d.targetFile, new Set());
-    }
-    graph.get(d.sourceFile)!.add(d.targetFile);
-  }
-
-  return graph;
 }
 
 function findStronglyConnectedComponents(

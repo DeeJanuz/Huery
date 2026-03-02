@@ -11,6 +11,8 @@
  * - Drizzle (detected by pgTable(, mysqlTable(, sqliteTable( in content)
  */
 
+import { getLineNumber } from './extraction-utils.js';
+
 /**
  * Represents a single field within a schema model.
  */
@@ -87,20 +89,6 @@ function hasMongooseSchemas(content: string): boolean {
 
 function hasDrizzleTables(content: string): boolean {
   return /(?:pgTable|mysqlTable|sqliteTable)\s*\(/.test(content);
-}
-
-// ---------------------------------------------------------------------------
-// Line number utility
-// ---------------------------------------------------------------------------
-
-function getLineNumber(content: string, index: number): number {
-  let line = 1;
-  for (let i = 0; i < index && i < content.length; i++) {
-    if (content[i] === '\n') {
-      line++;
-    }
-  }
-  return line;
 }
 
 /**

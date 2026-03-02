@@ -1,4 +1,5 @@
 import type { FileDependency } from '@/domain/models/index.js';
+import { buildAdjacencyGraph } from '@/application/graph-analysis/graph-utils.js';
 
 export interface TransitiveDep {
   readonly file: string;
@@ -16,44 +17,13 @@ export function computeTransitiveDeps(
     return [];
   }
 
-  const adjacency = buildDirectedAdjacency(deps, direction);
+  const adjacency = buildAdjacencyGraph(deps, direction);
 
   if (!adjacency.has(startFile)) {
     return [];
   }
 
   return bfs(startFile, adjacency, maxDepth);
-}
-
-function buildDirectedAdjacency(
-  deps: FileDependency[],
-  direction: 'dependents' | 'dependencies',
-): Map<string, Set<string>> {
-  const graph = new Map<string, Set<string>>();
-  const seen = new Set<string>();
-
-  for (const dep of deps) {
-    const key = `${dep.sourceFile}->${dep.targetFile}`;
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-
-    const from = direction === 'dependencies' ? dep.sourceFile : dep.targetFile;
-    const to = direction === 'dependencies' ? dep.targetFile : dep.sourceFile;
-
-    if (!graph.has(from)) {
-      graph.set(from, new Set());
-    }
-    graph.get(from)!.add(to);
-
-    // Ensure the target node exists in the graph even if it has no outgoing edges
-    if (!graph.has(to)) {
-      graph.set(to, new Set());
-    }
-  }
-
-  return graph;
 }
 
 interface BfsEntry {

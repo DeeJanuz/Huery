@@ -13,6 +13,8 @@
  * - Redux patterns (.dispatch)
  */
 
+import { getLineNumber } from './extraction-utils.js';
+
 /**
  * Represents a detected event flow in source code.
  */
@@ -119,19 +121,6 @@ const EVENT_PATTERNS: ReadonlyArray<{
 function isCommentLine(line: string): boolean {
   const trimmed = line.trimStart();
   return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
-}
-
-/**
- * Get the 1-based line number for a character offset in source text.
- */
-function getLineNumber(content: string, offset: number): number {
-  let line = 1;
-  for (let i = 0; i < offset && i < content.length; i++) {
-    if (content[i] === '\n') {
-      line++;
-    }
-  }
-  return line;
 }
 
 /**

@@ -24,13 +24,33 @@ const DEFAULT_OPTIONS: FileFilterOptions = {
  * Convert a simple glob pattern to a RegExp.
  * Supports ** (any path) and * (any segment).
  */
-function globToRegex(pattern: string): RegExp {
+export function globToRegex(pattern: string): RegExp {
   const escaped = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     .replace(/\*\*/g, '{{GLOBSTAR}}')
     .replace(/\*/g, '[^/]*')
     .replace(/\{\{GLOBSTAR\}\}/g, '.*');
   return new RegExp(`^${escaped}$`);
+}
+
+/**
+ * Check whether a file path passes the include/exclude glob filters.
+ * If include is non-empty, the path must match at least one include pattern.
+ * If exclude is non-empty, the path must not match any exclude pattern.
+ */
+export function passesGlobFilters(
+  filePath: string,
+  config: { readonly include: string[]; readonly exclude: string[] },
+): boolean {
+  if (config.exclude.length > 0) {
+    for (const pattern of config.exclude) {
+      if (globToRegex(pattern).test(filePath)) return false;
+    }
+  }
+  if (config.include.length > 0) {
+    return config.include.some(pattern => globToRegex(pattern).test(filePath));
+  }
+  return true;
 }
 
 /**
