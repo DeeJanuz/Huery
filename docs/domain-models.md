@@ -198,13 +198,15 @@ OPTIONS
 
 **Properties:**
 - phase: 'analyzing' | 'deep-analysis' | 'manifests' (readonly) - Current analysis phase
-- filesProcessed: number (readonly) - Number of files processed so far
+- filesProcessed: number (readonly) - Number of source code files processed so far
 - totalFiles: number (readonly) - Total files to process
+- filesSkipped: number (readonly) - Number of non-source files skipped (e.g., .md, .png, .json)
 - codeUnitsExtracted: number (readonly) - Running count of extracted code units
 - patternsDetected: number (readonly) - Running count of detected patterns
 - dependenciesFound: number (readonly) - Running count of found dependencies
 - currentFile: string? (readonly) - Basename of the file currently being processed
 - deepAnalysisStep: string? (readonly) - Name of the current deep analysis step (e.g., "file clustering", "callee resolution")
+- deepAnalysisProgress: string? (readonly) - Per-file progress within a deep analysis step (e.g., "42/100")
 
 **Location:** `src/application/analysis-progress.ts`
 

@@ -270,7 +270,7 @@ npx heury init
 | Command | Purpose |
 |---------|---------|
 | `npx heury init` | Initialize heury in a project. Creates config, sets up git hooks, creates `.heury/` directory. |
-| `npx heury analyze` | Run full codebase analysis and generate manifest files |
+| `npx heury analyze [dir]` | Run full codebase analysis and generate manifest files. Accepts an optional positional directory argument (e.g., `heury analyze /path/to/project`) or `-d` flag. |
 | `npx heury analyze --incremental` | Incremental analysis: only re-process files changed in the last commit |
 | `npx heury hook install` | Install a post-commit git hook that runs incremental analysis automatically |
 | `npx heury hook remove` | Remove the heury post-commit git hook |
